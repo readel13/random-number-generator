@@ -8,11 +8,7 @@ import org.example.math.MathUtil;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
-import org.jfree.chart.axis.NumberAxis;
-import org.jfree.chart.axis.NumberTickUnit;
-import org.jfree.chart.plot.XYPlot;
-import org.jfree.data.xy.XYSeries;
-import org.jfree.data.xy.XYSeriesCollection;
+import org.jfree.data.category.DefaultCategoryDataset;
 
 import javax.swing.*;
 
@@ -41,29 +37,25 @@ public class SimilarityRuleChart extends JFrame {
         setSize(WIDTH, HEIGHT);
     }
 
-    private static JFreeChart createChart(XYSeriesCollection generationCollection) {
-        JFreeChart chart = ChartFactory.createXYLineChart(
+    private static JFreeChart createChart(DefaultCategoryDataset dataset) {
+        JFreeChart chart = ChartFactory.createBarChart(
                 "Similarity rate to CA generations (lower better)",  // title
                 "Generation",             // x-axis label
                 "Similarity in percentage",   // y-axis label
-                generationCollection);
+                dataset);
+//
+//        var xAxis = (NumberAxis) ((XYPlot) chart.getPlot()).getDomainAxis();
+//        xAxis.setTickUnit(new NumberTickUnit(1));
+//        xAxis.setRange(1, 10);
 
-        var xAxis = (NumberAxis) ((XYPlot) chart.getPlot()).getDomainAxis();
-        xAxis.setTickUnit(new NumberTickUnit(1));
-        xAxis.setRange(1, 10);
-
-        var yAxis = (NumberAxis) ((XYPlot) chart.getPlot()).getRangeAxis();
-        yAxis.setRange(0, 20);
-        yAxis.setTickUnit(new NumberTickUnit(1));
+//        var yAxis = (NumberAxis) ((XYPlot) chart.getPlot()).getRangeAxis();
+//        yAxis.setRange(0, 20);
+//        yAxis.setTickUnit(new NumberTickUnit(1));
         return chart;
     }
 
-    private XYSeriesCollection createDataset() {
-        var rule30GenerationCa = new XYSeries("Rule 30");
-        var rule90GenerationCa = new XYSeries("Rule 90");
-        var rule105GenerationCa = new XYSeries("Rule 105");
-        var rule150GenerationCa = new XYSeries("Rule 150");
-        var generationCollection = new XYSeriesCollection();
+    private DefaultCategoryDataset createDataset() {
+        var dataset = new DefaultCategoryDataset();
 
         byte[] first = WebcamUtils.getImageBytes(webcam, "bmp");
 
@@ -77,16 +69,12 @@ public class SimilarityRuleChart extends JFrame {
             byte[] cellular150 = CellAutomataUtils.evolveWithCABytes(first, finalIndex, RulesSet::rule150);
 
 //                System.out.println("Similiraty rate: " + similarityRate);
-            rule30GenerationCa.add(finalIndex, MathUtil.compare(first, cellular30));
-            rule90GenerationCa.add(finalIndex, MathUtil.compare(first, cellular90));
-            rule105GenerationCa.add(finalIndex, MathUtil.compare(first, cellular105));
-            rule150GenerationCa.add(finalIndex, MathUtil.compare(first, cellular150));
+            dataset.addValue(MathUtil.compare(first, cellular30), "Rule30", String.valueOf(finalIndex));
+            dataset.addValue(MathUtil.compare(first, cellular90), "Rule 90", String.valueOf(finalIndex));
+            dataset.addValue(MathUtil.compare(first, cellular105), "Rule 105", String.valueOf(finalIndex));
+            dataset.addValue(MathUtil.compare(first, cellular150), "Rule 150", String.valueOf(finalIndex));
         }
 
-        generationCollection.addSeries(rule30GenerationCa);
-        generationCollection.addSeries(rule90GenerationCa);
-        generationCollection.addSeries(rule105GenerationCa);
-        generationCollection.addSeries(rule150GenerationCa);
-        return generationCollection;
+        return dataset;
     }
 }
