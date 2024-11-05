@@ -32,7 +32,6 @@ public class ResolutionDropdown extends JComboBox<String> {
         }
     }
 
-
     private int getSelectedIndexResolution(Dimension webcamResolution) {
         int resultIndex = 0;
         for (int i = 0; i < CUSTOM_RESOLUTIONS.length; i++) {

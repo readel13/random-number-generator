@@ -2,7 +2,6 @@ package org.example.ui.reports;
 
 import com.github.sarxos.webcam.Webcam;
 import com.github.sarxos.webcam.WebcamUtils;
-import org.apache.commons.lang3.ArrayUtils;
 import org.example.math.MathUtil;
 import org.example.math.model.FrameStats;
 import org.example.rule.RulesSet;
@@ -16,7 +15,6 @@ import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.ValueMarker;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.ui.TextAnchor;
-import org.jfree.data.statistics.HistogramDataset;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
@@ -59,7 +57,7 @@ public class BytesDistributionReport extends JFrame {
 
         add(controlPanel, BorderLayout.NORTH);
 
-        var dataset = createDatasetV2();
+        var dataset = createDataset();
         JFreeChart chart = buildChart(dataset);
 
         add(new ChartPanel(chart), BorderLayout.CENTER);
@@ -86,7 +84,7 @@ public class BytesDistributionReport extends JFrame {
                     .orElse(null);
 
             this.remove(currentChart);
-            this.add(new ChartPanel(buildChart(createDatasetV2())));
+            this.add(new ChartPanel(buildChart(createDataset())));
             this.revalidate();
             this.repaint();
         });
@@ -141,7 +139,7 @@ public class BytesDistributionReport extends JFrame {
         return chart;
     }
 
-    private XYSeriesCollection createDatasetV2() {
+    private XYSeriesCollection createDataset() {
         XYSeriesCollection dataset = new XYSeriesCollection();
 
         byte[] imageBytes = WebcamUtils.getImageBytes(webcam, "bmp");
@@ -210,47 +208,6 @@ public class BytesDistributionReport extends JFrame {
             frameStats.getByteCountMap().forEach((aByte, count) -> series.add((double) aByte, 100.0d * count / imageCA150Bytes.length));
 
             dataset.addSeries(series);
-        }
-
-        return dataset;
-    }
-
-
-    private HistogramDataset createDataset() {
-        HistogramDataset dataset = new HistogramDataset();
-
-        byte[] imageBytes = WebcamUtils.getImageBytes(webcam, "bmp");
-
-        if (includeSecureRandomState) {
-            SecureRandom secureRandom = new SecureRandom();
-            byte[] secureRandomBytes = new byte[921654];
-            secureRandom.nextBytes(secureRandomBytes);
-
-            dataset.addSeries("SecureRandom", Arrays.stream(ArrayUtils.toObject(secureRandomBytes)).mapToDouble(d -> d).toArray(), 256);
-        }
-
-        if (includeWebcamRawState) {
-            dataset.addSeries("Webcam", Arrays.stream(ArrayUtils.toObject(imageBytes)).mapToDouble(d -> d).toArray(), 256);
-        }
-
-        if (includeRule30State) {
-            byte[] imageCABytes = CellAutomataUtils.evolveWithCABytes(imageBytes, generationsState);
-            dataset.addSeries("CA30", Arrays.stream(ArrayUtils.toObject(imageCABytes)).mapToDouble(d -> d).toArray(), 256);
-        }
-
-        if (includeRule90State) {
-            byte[] imageCA90Bytes = CellAutomataUtils.evolveWithCABytes(imageBytes, generationsState, RulesSet::rule90);
-            dataset.addSeries("CA90", Arrays.stream(ArrayUtils.toObject(imageCA90Bytes)).mapToDouble(d -> d).toArray(), 256);
-        }
-
-        if (includeRule105State) {
-            byte[] imageCA105Bytes = CellAutomataUtils.evolveWithCABytes(imageBytes, generationsState, RulesSet::rule105);
-            dataset.addSeries("CA105", Arrays.stream(ArrayUtils.toObject(imageCA105Bytes)).mapToDouble(d -> d).toArray(), 256);
-        }
-
-        if (includeRule150State) {
-            byte[] imageCA150Bytes = CellAutomataUtils.evolveWithCABytes(imageBytes, generationsState, RulesSet::rule150);
-            dataset.addSeries("CA150", Arrays.stream(ArrayUtils.toObject(imageCA150Bytes)).mapToDouble(d -> d).toArray(), 256);
         }
 
         return dataset;

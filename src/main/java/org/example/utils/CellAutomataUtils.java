@@ -29,14 +29,19 @@ public class CellAutomataUtils {
     }
 
     public static byte[] evolveWithCABytes(byte[] image, int generations, Rule rule) {
-//        boolean[] generation = BitsUtils.toBool(image);
+        boolean[] generation = evolveWithCABytesBits(image, generations, rule);
+
+        return BitsUtils.toByteArray(generation);
+    }
+
+    public static boolean[] evolveWithCABytesBits(byte[] image, int generations, Rule rule) {
         boolean[] generation = bitsUtils.toBoolCached(image);
 
         for (int i = 0; i < generations; i++) {
-            generation =  CellAutomataUtils.makeGeneration(generation, rule);
+            generation = CellAutomataUtils.makeGeneration(generation, rule);
         }
 
-        return BitsUtils.toByteArray(generation);
+        return generation;
     }
 
     private static boolean[] makeGeneration(boolean[] boolStart, Rule rule) {

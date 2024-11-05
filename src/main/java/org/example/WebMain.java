@@ -3,7 +3,10 @@ package org.example;
 import com.github.sarxos.webcam.Webcam;
 import com.github.sarxos.webcam.WebcamPanel;
 import com.github.sarxos.webcam.WebcamResolution;
+import org.example.ui.button.AnalyticButton;
 import org.example.ui.button.MyCustomButton;
+import org.example.ui.frames.GetNoiseTextExample;
+import org.example.ui.frames.ModifiedImageFrame;
 import org.example.ui.reports.BytesDistributionReport;
 import org.example.ui.reports.OneVsZeros;
 import org.example.ui.reports.SimilarityRuleChart;
@@ -66,9 +69,11 @@ public class WebMain {
 
         buttonPanel.add(new MyCustomButton("Byte distribution", e -> new BytesDistributionReport(defaultWebcam)));
         buttonPanel.add(new MyCustomButton("One Vs Zero", e -> new OneVsZeros(defaultWebcam)));
-        // buttonPanel.add(new AnalyticButton(defaultWebcam));
-        buttonPanel.add(new MyCustomButton("Rule similarity comparison test", e ->new SimilarityRuleChart(defaultWebcam)));
+        buttonPanel.add(new AnalyticButton(defaultWebcam));
+        buttonPanel.add(new MyCustomButton("Rule similarity comparison test", e -> new SimilarityRuleChart(defaultWebcam)));
         buttonPanel.add(new MyCustomButton("Speed rule test", e -> new SpeedRuleChart(defaultWebcam)));
+        buttonPanel.add(new MyCustomButton("Modified Image", e -> new ModifiedImageFrame(defaultWebcam)));
+        buttonPanel.add(new MyCustomButton("Get noise text", e -> new GetNoiseTextExample(defaultWebcam)));
         buttonPanel.add(webcamDropdown);
         buttonPanel.add(resolutionDropdown);
         buttonPanel.add(saveConfig);
