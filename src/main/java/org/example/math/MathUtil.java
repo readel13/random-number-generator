@@ -48,10 +48,10 @@ public class MathUtil {
             byteCount.computeIfPresent(bytes[i], (k, v) -> v + 1);
         }
 
-        DescriptiveStatistics itemCountStats = new DescriptiveStatistics();
-        for (Integer count : byteCount.values()) {
-            itemCountStats.addValue((count * 100.0) / bytes.length);
-        }
+//        DescriptiveStatistics itemCountStats = new DescriptiveStatistics();
+//        for (Integer count : byteCount.values()) {
+//            itemCountStats.addValue((count * 100.0) / bytes.length);
+//        }
 
         var statsCount = byteCount.values().stream().mapToInt(i -> i).summaryStatistics();
         long countConsistent = byteCount.values().stream()
@@ -71,7 +71,8 @@ public class MathUtil {
                 .countBytesConsistentByRange(bytesConsistentByRange)
                 .consistencyRateByItemCount(consistencyRateByItemCount)
                 .consistencyRateByItemAvgDiff(consistencyRateByItemAvgDiff)
-                .itemCountStats(itemCountStats)
+                //.itemCountStats(itemCountStats)
+                .averageDeviationFromIdealDist(averageDeviationFromIdealDist(byteCount, bytes.length))
                 .itemAvgDiffStats(null) // TODO: implement
                 .build();
     }
@@ -85,6 +86,16 @@ public class MathUtil {
         }
 
         return byteCount;
+    }
+
+    private static double averageDeviationFromIdealDist(Map<Byte, Integer> byteCountMap, int imageSize) {
+        int idealDistbByteCount = imageSize / byteCountMap.size();
+
+        return byteCountMap.values().stream()
+                .map(Math::abs)
+                .mapToDouble(currentCount -> (double) Math.abs(currentCount - idealDistbByteCount) / 100.0d)
+                .average()
+                .orElse(0.0d);
     }
 
     //

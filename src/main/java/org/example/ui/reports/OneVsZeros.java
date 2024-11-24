@@ -133,55 +133,63 @@ public class OneVsZeros extends JFrame {
             byte[] secureRandomBytes = new byte[imageBytes.length];
             secureRandom.nextBytes(secureRandomBytes);
 
-            int countZeros = countZeros(secureRandomBytes);
-            int countOnes = secureRandomBytes.length - countZeros;
+            long bitSize = 8L * secureRandomBytes.length;
+            int zerosPercentage = (int) (((double) countZeros(secureRandomBytes) / bitSize) * 100);
+            int onesPercentage = -1 * (100 - zerosPercentage);
 
-            dataset.addValue(countZeros, "Zero", "SecureRandom");
-            dataset.addValue(countOnes, "One", "SecureRandom");
+
+            dataset.addValue(zerosPercentage, "Zero", "SecureRandom");
+            dataset.addValue(onesPercentage, "One", "SecureRandom");
         }
 
         if (includeWebcamRaw) {
-            int countZeros = countZeros(imageBytes);
-            int countOnes = imageBytes.length - countZeros;
+            long bitSize = 8L * imageBytes.length;
+            int zerosPercentage = (int) (((double) countZeros(imageBytes) / bitSize) * 100);
+            int onesPercentage = -1 * (100 - zerosPercentage);
 
-            dataset.addValue(countZeros, "Zero", "WebcamRaw");
-            dataset.addValue(countOnes, "One", "WebcamRaw");
+            dataset.addValue(zerosPercentage, "Zero", "WebcamRaw");
+            dataset.addValue(onesPercentage, "One", "WebcamRaw");
         }
 
         if (includeRule30) {
             byte[] imageCABytes = CellAutomataUtils.evolveWithCABytes(imageBytes, generations);
-            int countZeros = countZeros(imageCABytes);
-            int countOnes = imageCABytes.length - countZeros;
 
-            dataset.addValue(countZeros, "Zero", "CA30");
-            dataset.addValue(countOnes, "One", "CA30");
+            long bitSize = 8L * imageBytes.length;
+            int zerosPercentage = (int) (((double) countZeros(imageCABytes) / bitSize) * 100);
+            int onesPercentage = -1 * (100 - zerosPercentage);
+
+            dataset.addValue(zerosPercentage, "Zero", "CA30");
+            dataset.addValue(onesPercentage, "One", "CA30");
         }
 
         if (includeRule90) {
             byte[] imageCA90Bytes = CellAutomataUtils.evolveWithCABytes(imageBytes, generations, RulesSet::rule90);
-            int countZeros = countZeros(imageCA90Bytes);
-            int countOnes = imageCA90Bytes.length - countZeros;
+            long bitSize = 8L * imageCA90Bytes.length;
+            int zerosPercentage = (int) (((double) countZeros(imageCA90Bytes) / bitSize) * 100);
+            int onesPercentage = -1 * (100 - zerosPercentage);
 
-            dataset.addValue(countZeros, "Zero", "CA90");
-            dataset.addValue(countOnes, "One", "CA90");
+            dataset.addValue(zerosPercentage, "Zero", "CA90");
+            dataset.addValue(onesPercentage, "One", "CA90");
         }
 
         if (includeRule105) {
             byte[] imageCA105Bytes = CellAutomataUtils.evolveWithCABytes(imageBytes, generations, RulesSet::rule105);
-            int countZeros = countZeros(imageCA105Bytes);
-            int countOnes = imageCA105Bytes.length - countZeros;
+            long bitSize = 8L * imageCA105Bytes.length;
+            int zerosPercentage = (int) (((double) countZeros(imageCA105Bytes) / bitSize) * 100);
+            int onesPercentage = -1 * (100 - zerosPercentage);
 
-            dataset.addValue(countZeros, "Zero", "CA105");
-            dataset.addValue(countOnes, "One", "CA105");
+            dataset.addValue(zerosPercentage, "Zero", "CA105");
+            dataset.addValue(onesPercentage, "One", "CA105");
         }
 
         if (includeRule150) {
             byte[] imageCA150Bytes = CellAutomataUtils.evolveWithCABytes(imageBytes, generations, RulesSet::rule150);
-            int countZeros = countZeros(imageCA150Bytes);
-            int countOnes = imageCA150Bytes.length - countZeros;
+            long bitSize = 8L * imageCA150Bytes.length;
+            int zerosPercentage = (int) (((double) countZeros(imageCA150Bytes) / bitSize) * 100);
+            int onesPercentage = -1 * (100 - zerosPercentage);
 
-            dataset.addValue(countZeros, "Zero", "CA150");
-            dataset.addValue(countOnes, "One", "CA150");
+            dataset.addValue(zerosPercentage, "Zero", "CA150");
+            dataset.addValue(onesPercentage, "One", "CA150");
         }
 
         return dataset;

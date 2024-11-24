@@ -14,6 +14,7 @@ import org.jfree.chart.axis.NumberTickUnit;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.ValueMarker;
 import org.jfree.chart.plot.XYPlot;
+import org.jfree.chart.title.TextTitle;
 import org.jfree.chart.ui.TextAnchor;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
@@ -22,6 +23,9 @@ import javax.swing.*;
 import java.awt.*;
 import java.security.SecureRandom;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class BytesDistributionReport extends JFrame {
 
@@ -29,7 +33,9 @@ public class BytesDistributionReport extends JFrame {
     private static final int WIDTH = 1600;
     private static final int HEIGHT = 900;
 
-    private int generationsState = 10;
+    private final static String AVG_DEVIATION_TEXT_FORMAT = "%s deviation: %.2f%%";
+
+    private int generationsState = 1;
 
     private final JTextField generations = new JTextField(10);
 
@@ -46,6 +52,8 @@ public class BytesDistributionReport extends JFrame {
     private final Checkbox includeRule90 = new Checkbox("Include Rule 90", true);
     private final Checkbox includeRule105 = new Checkbox("Include Rule 105", true);
     private final Checkbox includeRule150 = new Checkbox("Include Rule 150", true);
+
+    private Map<String, Double> ruleDeviationMap = new HashMap<>();
 
     private final Webcam webcam;
 
@@ -136,11 +144,21 @@ public class BytesDistributionReport extends JFrame {
 
         plot.addRangeMarker(marker);
 
+        String subtitle = ruleDeviationMap.entrySet().stream().map(entry ->
+                AVG_DEVIATION_TEXT_FORMAT.formatted(entry.getKey(), entry.getValue())
+        ).collect(Collectors.joining(", "));
+
+        chart.addSubtitle(new TextTitle(subtitle));
+
         return chart;
     }
 
     private XYSeriesCollection createDataset() {
         XYSeriesCollection dataset = new XYSeriesCollection();
+
+        if (!ruleDeviationMap.isEmpty()) {
+            ruleDeviationMap.clear();
+        }
 
         byte[] imageBytes = WebcamUtils.getImageBytes(webcam, "bmp");
 
@@ -154,6 +172,7 @@ public class BytesDistributionReport extends JFrame {
             FrameStats frameStats = MathUtil.analyseFrame(secureRandomBytes, 30, 70);
             frameStats.getByteCountMap().forEach((aByte, count) -> series.add((double) aByte, 100.0d * count / secureRandomBytes.length));
 
+            ruleDeviationMap.put("Secure Random", frameStats.getAverageDeviationFromIdealDist());
             dataset.addSeries(series);
         }
 
@@ -163,6 +182,7 @@ public class BytesDistributionReport extends JFrame {
             FrameStats frameStats = MathUtil.analyseFrame(imageBytes, 30, 70);
             frameStats.getByteCountMap().forEach((aByte, count) -> series.add((double) aByte, 100.0d * count / imageBytes.length));
 
+            ruleDeviationMap.put("Webcam Raw", frameStats.getAverageDeviationFromIdealDist());
             dataset.addSeries(series);
         }
 
@@ -174,6 +194,7 @@ public class BytesDistributionReport extends JFrame {
             FrameStats frameStats = MathUtil.analyseFrame(imageCABytes, 30, 70);
             frameStats.getByteCountMap().forEach((aByte, count) -> series.add((double) aByte, 100.0d * count / imageCABytes.length));
 
+            ruleDeviationMap.put("CA30", frameStats.getAverageDeviationFromIdealDist());
             dataset.addSeries(series);
         }
 
@@ -185,6 +206,7 @@ public class BytesDistributionReport extends JFrame {
             FrameStats frameStats = MathUtil.analyseFrame(imageCA90Bytes, 30, 70);
             frameStats.getByteCountMap().forEach((aByte, count) -> series.add((double) aByte, 100.0d * count / imageCA90Bytes.length));
 
+            ruleDeviationMap.put("CA90", frameStats.getAverageDeviationFromIdealDist());
             dataset.addSeries(series);
         }
 
@@ -196,6 +218,7 @@ public class BytesDistributionReport extends JFrame {
             FrameStats frameStats = MathUtil.analyseFrame(imageCA105Bytes, 30, 70);
             frameStats.getByteCountMap().forEach((aByte, count) -> series.add((double) aByte, 100.0d * count / imageCA105Bytes.length));
 
+            ruleDeviationMap.put("CA105", frameStats.getAverageDeviationFromIdealDist());
             dataset.addSeries(series);
         }
 
@@ -207,6 +230,7 @@ public class BytesDistributionReport extends JFrame {
             FrameStats frameStats = MathUtil.analyseFrame(imageCA150Bytes, 30, 70);
             frameStats.getByteCountMap().forEach((aByte, count) -> series.add((double) aByte, 100.0d * count / imageCA150Bytes.length));
 
+            ruleDeviationMap.put("CA150", frameStats.getAverageDeviationFromIdealDist());
             dataset.addSeries(series);
         }
 

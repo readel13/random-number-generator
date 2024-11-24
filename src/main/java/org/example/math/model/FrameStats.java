@@ -24,6 +24,8 @@ public class FrameStats {
 
     private double consistencyRateByItemAvgDiff;
 
+    private double averageDeviationFromIdealDist;
+
     // stats of byteCount map
     private DescriptiveStatistics itemCountStats;
 
