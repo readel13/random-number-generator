@@ -62,4 +62,9 @@ public class BufferedImageUtils {
     public static int getImageOffsetBmp(byte[] image) {
         return ByteBuffer.wrap((Arrays.copyOfRange(image, 10, 14))).order(ByteOrder.LITTLE_ENDIAN).getInt();
     }
+
+    public static byte getSelectedByteFromImage(byte[] image, int selectedByte) {
+        var startIndex = BufferedImageUtils.getImageOffsetBmp(image);
+        return image[startIndex + selectedByte];
+    }
 }

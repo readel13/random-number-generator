@@ -12,14 +12,18 @@ import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.axis.NumberTickUnit;
 import org.jfree.chart.plot.CategoryPlot;
-import org.jfree.chart.renderer.category.LineAndShapeRenderer;
 import org.jfree.data.category.DefaultCategoryDataset;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
-public class ByteChangeComparison extends JFrame {
+public class ByteChangeDistrComparison extends JFrame {
 
     private final Webcam webcam;
 
@@ -33,7 +37,7 @@ public class ByteChangeComparison extends JFrame {
     private final NumberField waitBetweenFramesInput = new NumberField(10, waitMsBetweenFrames);
     private final NumberField numberOfFramesInput = new NumberField(10, numberOfFrames);
 
-    public ByteChangeComparison(Webcam webcam) {
+    public ByteChangeDistrComparison(Webcam webcam) {
         this.webcam = webcam;
         buildDefaultFrame();
 
@@ -75,24 +79,17 @@ public class ByteChangeComparison extends JFrame {
     }
 
     private JFreeChart createChart(DefaultCategoryDataset dataset) {
-        JFreeChart lineChart = ChartFactory.createLineChart(
-                "Byte Change Comparison",
-                "FRAME NUMBER",
-                "VALUE",
+        JFreeChart lineChart = ChartFactory.createBarChart(
+                "Byte Change Distribution",
+                "Deltas",
+                "Percentage of repeating",
                 dataset);
 
         CategoryPlot plot = (CategoryPlot) lineChart.getPlot();
-        plot.setRenderer(new LineAndShapeRenderer());
-
         NumberAxis rangeAxis = (NumberAxis) plot.getRangeAxis();
         double minDatasetValue = findMinValue(dataset);
         double maxDatasetValue = findMaxValue(dataset);
         rangeAxis.setRange(minDatasetValue - 2, maxDatasetValue + 2);
-
-        LineAndShapeRenderer renderer = (LineAndShapeRenderer) plot.getRenderer();
-
-        renderer.setDefaultStroke(new BasicStroke(3.0f));
-        renderer.setAutoPopulateSeriesStroke(false);
 
         if ((maxDatasetValue - minDatasetValue) < 20) {
             rangeAxis.setAutoTickUnitSelection(false);
@@ -105,13 +102,16 @@ public class ByteChangeComparison extends JFrame {
     public DefaultCategoryDataset createDataset() {
         var dataset = new DefaultCategoryDataset();
 
-        for (int i = 1; i <= numberOfFrames; i++) {
-            byte[] imageBytes = WebcamUtils.getImageBytes(this.webcam, "bmp");
+        List<Integer> deltas = new ArrayList<>();
 
-            var startIndex = BufferedImageUtils.getImageOffsetBmp(imageBytes);
+        int prevValue = BufferedImageUtils.getSelectedByteFromImage(WebcamUtils.getImageBytes(this.webcam, "bmp"), selectedByteNumber);
 
-            String groupName = i == 1 ? "Original" : String.valueOf(i);
-            dataset.addValue(imageBytes[startIndex + selectedByteNumber], "Frame", String.valueOf(i));
+        for (int i = 1; i < numberOfFrames; i++) {
+            byte currentVal = BufferedImageUtils.getSelectedByteFromImage(WebcamUtils.getImageBytes(this.webcam, "bmp"), selectedByteNumber);
+
+            deltas.add((currentVal - prevValue));
+
+            prevValue = currentVal;
 
             if (waitMsBetweenFrames > 0) {
                 try {
@@ -122,11 +122,18 @@ public class ByteChangeComparison extends JFrame {
             }
         }
 
+        deltas.stream()
+                .collect(Collectors.groupingBy(e -> e, Collectors.counting()))
+                .entrySet().stream().peek(e -> e.setValue((long) (100 * ((double) e.getValue() / numberOfFrames))))// transform count values to percentages
+                .sorted(Map.Entry.comparingByKey())
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (oldValue, newValue) -> oldValue, LinkedHashMap::new))
+                .forEach((key, value) -> dataset.addValue(value, "Deltas value", key));
+
         return dataset;
     }
 
     private void buildDefaultFrame() {
-        setTitle("Byte Change Comparison");
+        setTitle("Byte Change Distribution");
         setLayout(new BorderLayout());
         setSize(1600, 900);
 

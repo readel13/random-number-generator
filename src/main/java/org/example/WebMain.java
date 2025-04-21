@@ -10,6 +10,7 @@ import org.example.ui.dropdown.WebcamDropdown;
 import org.example.ui.frames.GetNoiseTextExample;
 import org.example.ui.frames.ModifiedImageFrame;
 import org.example.ui.reports.ByteChangeComparison;
+import org.example.ui.reports.ByteChangeDistrComparison;
 import org.example.ui.reports.BytesDistributionReport;
 import org.example.ui.reports.OneVsZeros;
 import org.example.ui.reports.SimilarityRuleChart;
@@ -70,7 +71,8 @@ public class WebMain {
 
         buttonPanel.add(new MyCustomButton("Byte distribution", e -> new BytesDistributionReport(defaultWebcam)));
         buttonPanel.add(new MyCustomButton("One Vs Zero", e -> new OneVsZeros(defaultWebcam)));
-        buttonPanel.add(new MyCustomButton("ByteChangeComparassion", e -> new ByteChangeComparison(defaultWebcam)));
+        buttonPanel.add(new MyCustomButton("ByteChangeComparassion (LineChart)", e -> new ByteChangeComparison(defaultWebcam)));
+        buttonPanel.add(new MyCustomButton("Byte Change Distribution", e -> new ByteChangeDistrComparison(defaultWebcam)));
         buttonPanel.add(new AnalyticButton(defaultWebcam));
         buttonPanel.add(new MyCustomButton("Rule similarity comparison test", e -> new SimilarityRuleChart(defaultWebcam)));
         buttonPanel.add(new MyCustomButton("Speed rule test", e -> new SpeedRuleChart(defaultWebcam)));
