@@ -5,14 +5,15 @@ import com.github.sarxos.webcam.WebcamPanel;
 import com.github.sarxos.webcam.WebcamResolution;
 import org.example.ui.button.AnalyticButton;
 import org.example.ui.button.MyCustomButton;
+import org.example.ui.dropdown.ResolutionDropdown;
+import org.example.ui.dropdown.WebcamDropdown;
 import org.example.ui.frames.GetNoiseTextExample;
 import org.example.ui.frames.ModifiedImageFrame;
+import org.example.ui.reports.ByteChangeComparison;
 import org.example.ui.reports.BytesDistributionReport;
 import org.example.ui.reports.OneVsZeros;
 import org.example.ui.reports.SimilarityRuleChart;
 import org.example.ui.reports.SpeedRuleChart;
-import org.example.ui.dropdown.ResolutionDropdown;
-import org.example.ui.dropdown.WebcamDropdown;
 
 import javax.swing.*;
 import java.awt.*;
@@ -69,6 +70,7 @@ public class WebMain {
 
         buttonPanel.add(new MyCustomButton("Byte distribution", e -> new BytesDistributionReport(defaultWebcam)));
         buttonPanel.add(new MyCustomButton("One Vs Zero", e -> new OneVsZeros(defaultWebcam)));
+        buttonPanel.add(new MyCustomButton("ByteChangeComparassion", e -> new ByteChangeComparison(defaultWebcam)));
         buttonPanel.add(new AnalyticButton(defaultWebcam));
         buttonPanel.add(new MyCustomButton("Rule similarity comparison test", e -> new SimilarityRuleChart(defaultWebcam)));
         buttonPanel.add(new MyCustomButton("Speed rule test", e -> new SpeedRuleChart(defaultWebcam)));

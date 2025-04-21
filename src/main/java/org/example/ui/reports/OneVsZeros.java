@@ -115,8 +115,8 @@ public class OneVsZeros extends JFrame {
 
         // Customize renderer
         BarRenderer renderer = (BarRenderer) plot.getRenderer();
-        renderer.setSeriesPaint(0, Color.BLUE); // Male bars
-        renderer.setSeriesPaint(1, Color.RED); // Female bars
+        renderer.setSeriesPaint(0, Color.BLUE);
+        renderer.setSeriesPaint(1, Color.RED);
         renderer.setItemMargin(-0.7);
 
         return chart;

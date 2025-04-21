@@ -6,6 +6,9 @@ import java.awt.image.DataBufferByte;
 import java.awt.image.Raster;
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.Arrays;
 import java.util.Random;
 
 import static java.awt.image.BufferedImage.TYPE_3BYTE_BGR;
@@ -53,5 +56,10 @@ public class BufferedImageUtils {
                         3 * width, 3,
                         new int[]{2, 1, 0}, null));
         return image;
+    }
+
+    // use for geting start image index without metadata
+    public static int getImageOffsetBmp(byte[] image) {
+        return ByteBuffer.wrap((Arrays.copyOfRange(image, 10, 14))).order(ByteOrder.LITTLE_ENDIAN).getInt();
     }
 }
