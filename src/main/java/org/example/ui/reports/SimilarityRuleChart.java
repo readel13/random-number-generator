@@ -4,6 +4,7 @@ import com.github.sarxos.webcam.Webcam;
 import com.github.sarxos.webcam.WebcamUtils;
 import org.example.rule.RulesSet;
 import org.example.utils.CellAutomataUtils;
+import org.example.utils.ShuffleUtils;
 import org.example.math.MathUtil;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
@@ -68,11 +69,15 @@ public class SimilarityRuleChart extends JFrame {
             byte[] cellular105 = CellAutomataUtils.evolveWithCABytes(first, finalIndex, RulesSet::rule105);
             byte[] cellular150 = CellAutomataUtils.evolveWithCABytes(first, finalIndex, RulesSet::rule150);
 
+            // Collections.shuffle baseline
+            byte[] shuffled = ShuffleUtils.shuffleBytes(first, finalIndex);
+
 //                System.out.println("Similiraty rate: " + similarityRate);
             dataset.addValue(MathUtil.compare(first, cellular30), "Rule30", String.valueOf(finalIndex));
             dataset.addValue(MathUtil.compare(first, cellular90), "Rule 90", String.valueOf(finalIndex));
             dataset.addValue(MathUtil.compare(first, cellular105), "Rule 105", String.valueOf(finalIndex));
             dataset.addValue(MathUtil.compare(first, cellular150), "Rule 150", String.valueOf(finalIndex));
+            dataset.addValue(MathUtil.compare(first, shuffled), "Shuffle", String.valueOf(finalIndex));
         }
 
         return dataset;

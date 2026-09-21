@@ -5,6 +5,7 @@ import com.github.sarxos.webcam.WebcamUtils;
 import org.example.rule.RulesSet;
 import org.example.utils.BitsUtils;
 import org.example.utils.CellAutomataUtils;
+import org.example.utils.ShuffleUtils;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
@@ -34,6 +35,7 @@ public class OneVsZeros extends JFrame {
     private boolean includeRule90 = true;
     private boolean includeRule105 = true;
     private boolean includeRule150 = true;
+    private boolean includeShuffle = true;
 
     private final Webcam webcam;
 
@@ -49,6 +51,7 @@ public class OneVsZeros extends JFrame {
         Checkbox includeRule90 = new Checkbox("Include Rule 90", true);
         Checkbox includeRule105 = new Checkbox("Include Rule 105", true);
         Checkbox includeRule150 = new Checkbox("Include Rule 150", true);
+        Checkbox includeShuffle = new Checkbox("Include Shuffle", true);
 
         JTextField generations = new JTextField(10);
 
@@ -60,6 +63,7 @@ public class OneVsZeros extends JFrame {
             this.includeRule90 = includeRule90.getState();
             this.includeRule105 = includeRule105.getState();
             this.includeRule150 = includeRule150.getState();
+            this.includeShuffle = includeShuffle.getState();
 
             this.generations = Integer.parseInt(generations.getText());
 
@@ -84,6 +88,7 @@ public class OneVsZeros extends JFrame {
         controlPanel.add(includeRule90);
         controlPanel.add(includeRule105);
         controlPanel.add(includeRule150);
+        controlPanel.add(includeShuffle);
         controlPanel.add(saveConfig);
 
         add(controlPanel, BorderLayout.NORTH);
@@ -190,6 +195,16 @@ public class OneVsZeros extends JFrame {
 
             dataset.addValue(zerosPercentage, "Zero", "CA150");
             dataset.addValue(onesPercentage, "One", "CA150");
+        }
+
+        if (includeShuffle) {
+            byte[] shuffledBytes = ShuffleUtils.shuffleBytes(imageBytes, generations);
+            long bitSize = 8L * shuffledBytes.length;
+            int zerosPercentage = (int) (((double) countZeros(shuffledBytes) / bitSize) * 100);
+            int onesPercentage = -1 * (100 - zerosPercentage);
+
+            dataset.addValue(zerosPercentage, "Zero", "Shuffle");
+            dataset.addValue(onesPercentage, "One", "Shuffle");
         }
 
         return dataset;

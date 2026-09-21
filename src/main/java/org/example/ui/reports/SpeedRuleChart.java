@@ -6,6 +6,7 @@ import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.example.rule.RulesSet;
 import org.example.utils.CellAutomataUtils;
 import org.example.utils.MeasureTimeUtil;
+import org.example.utils.ShuffleUtils;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
@@ -28,13 +29,13 @@ public class SpeedRuleChart extends JFrame {
 
     private int iterations = 10;
     private int generations = 1;
-    private boolean includeTakePhoto = false;
+    private boolean includeTakingPhoto = false;
 
     private final JLabel genLabel = new JLabel("Generations:");
     private final JTextField genInput = new JTextField(10);
     private final JLabel iterLabel = new JLabel("Iterations:");
     private final JTextField iterInput = new JTextField(10);
-    private final Checkbox includeTakePhotoCheckBox = new Checkbox("Include take photo", includeTakePhoto);
+    private final Checkbox includeTakePhotoCheckBox = new Checkbox("Include taking a photo", includeTakingPhoto);
 
     public SpeedRuleChart(Webcam webcam) {
         this.webcam = webcam;
@@ -44,7 +45,7 @@ public class SpeedRuleChart extends JFrame {
         configButton.addActionListener((event) -> {
             generations = Integer.parseInt(genInput.getText());
             iterations = Integer.parseInt(iterInput.getText());
-            includeTakePhoto = includeTakePhotoCheckBox.getState();
+            includeTakingPhoto = includeTakePhotoCheckBox.getState();
 
             var currentChart = Arrays.stream(this.getContentPane().getComponents())
                     .filter(t -> t instanceof ChartPanel)
@@ -92,7 +93,7 @@ public class SpeedRuleChart extends JFrame {
 
     private JFreeChart createChart(DefaultCategoryDataset dataset) {
         return ChartFactory.createBarChart(
-                "Rule speed comparison test(lower better)",
+                "Rule speed comparison test (lower is better)",
                 "%d generations of each Rules".formatted(generations),
                 "Average time of %d iterations in ms".formatted(iterations),
                 dataset);
@@ -105,6 +106,7 @@ public class SpeedRuleChart extends JFrame {
         var rule90TimeExecs = new ArrayList<Long>();
         var rule105TimeExecs = new ArrayList<Long>();
         var rule150TimeExecs = new ArrayList<Long>();
+        var shuffleTimeExecs = new ArrayList<Long>();
 
         byte[] originalPhoto = WebcamUtils.getImageBytes(webcam, "bmp");
         var imageTakeExec = MeasureTimeUtil.measureTime(() -> WebcamUtils.getImageBytes(webcam, "bmp"));
@@ -127,10 +129,14 @@ public class SpeedRuleChart extends JFrame {
             long cellular105 = MeasureTimeUtil.measureTime(() -> CellAutomataUtils.evolveWithCABytes(originalPhoto, generations, RulesSet::rule105));
             long cellular150 = MeasureTimeUtil.measureTime(() -> CellAutomataUtils.evolveWithCABytes(originalPhoto, generations, RulesSet::rule150));
 
-            rule30TimeExecs.add(includeTakePhoto ? imageTakeExec + cellular30 : cellular30);
-            rule90TimeExecs.add(includeTakePhoto ? imageTakeExec + cellular90 : cellular90);
-            rule105TimeExecs.add(includeTakePhoto ? imageTakeExec + cellular105 : cellular105);
-            rule150TimeExecs.add(includeTakePhoto ? imageTakeExec + cellular150 : cellular150);
+            // Collections.shuffle baseline, one shuffle round per generation
+            long shuffle = MeasureTimeUtil.measureTime(() -> ShuffleUtils.shuffleBytes(originalPhoto, generations));
+
+            rule30TimeExecs.add(includeTakingPhoto ? imageTakeExec + cellular30 : cellular30);
+            rule90TimeExecs.add(includeTakingPhoto ? imageTakeExec + cellular90 : cellular90);
+            rule105TimeExecs.add(includeTakingPhoto ? imageTakeExec + cellular105 : cellular105);
+            rule150TimeExecs.add(includeTakingPhoto ? imageTakeExec + cellular150 : cellular150);
+            shuffleTimeExecs.add(includeTakingPhoto ? imageTakeExec + shuffle : shuffle);
         }
 
         long secureRandomTime = MeasureTimeUtil.measureTime(() -> {
@@ -150,6 +156,7 @@ public class SpeedRuleChart extends JFrame {
         dataset.addValue(average(rule90TimeExecs), "Rule90", "Rule90");
         dataset.addValue(average(rule105TimeExecs), "Rule105", "Rule105");
         dataset.addValue(average(rule150TimeExecs), "Rule150", "Rule150");
+        dataset.addValue(average(shuffleTimeExecs), "Shuffle", "Shuffle");
 
         return dataset;
     }

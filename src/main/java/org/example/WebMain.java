@@ -31,7 +31,7 @@ public class WebMain {
         defaultWebcam.setViewSize(WebcamResolution.HD.getSize());
         defaultWebcam.open(true);
 
-        var mainWindow = new JFrame("Program");
+        var mainWindow = new JFrame("Image change analyzer");
         mainWindow.setLayout(new BorderLayout());
         mainWindow.setResizable(true);
         mainWindow.setSize(1600, 900);

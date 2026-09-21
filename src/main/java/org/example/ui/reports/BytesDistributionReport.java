@@ -6,6 +6,7 @@ import org.example.math.MathUtil;
 import org.example.math.model.FrameStats;
 import org.example.rule.RulesSet;
 import org.example.utils.CellAutomataUtils;
+import org.example.utils.ShuffleUtils;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
@@ -45,6 +46,7 @@ public class BytesDistributionReport extends JFrame {
     private boolean includeRule90State = true;
     private boolean includeRule105State = true;
     private boolean includeRule150State = true;
+    private boolean includeShuffleState = true;
 
     private final Checkbox includeSecureRandom = new Checkbox("Include Secure Random", true);
     private final Checkbox includeWebcam = new Checkbox("Include webcam", true);
@@ -52,6 +54,7 @@ public class BytesDistributionReport extends JFrame {
     private final Checkbox includeRule90 = new Checkbox("Include Rule 90", true);
     private final Checkbox includeRule105 = new Checkbox("Include Rule 105", true);
     private final Checkbox includeRule150 = new Checkbox("Include Rule 150", true);
+    private final Checkbox includeShuffle = new Checkbox("Include Shuffle", true);
 
     private Map<String, Double> ruleDeviationMap = new HashMap<>();
 
@@ -82,6 +85,7 @@ public class BytesDistributionReport extends JFrame {
             this.includeRule90State = includeRule90.getState();
             this.includeRule105State = includeRule105.getState();
             this.includeRule150State = includeRule150.getState();
+            this.includeShuffleState = includeShuffle.getState();
 
             this.generationsState = Integer.parseInt(generations.getText());
 
@@ -106,6 +110,7 @@ public class BytesDistributionReport extends JFrame {
         controlPanel.add(includeRule90);
         controlPanel.add(includeRule105);
         controlPanel.add(includeRule150);
+        controlPanel.add(includeShuffle);
         controlPanel.add(saveConfig);
 
         return controlPanel;
@@ -231,6 +236,18 @@ public class BytesDistributionReport extends JFrame {
             frameStats.getByteCountMap().forEach((aByte, count) -> series.add((double) aByte, 100.0d * count / imageCA150Bytes.length));
 
             ruleDeviationMap.put("CA150", frameStats.getAverageDeviationFromIdealDist());
+            dataset.addSeries(series);
+        }
+
+        if (includeShuffleState) {
+            byte[] shuffledBytes = ShuffleUtils.shuffleBytes(imageBytes, generationsState);
+
+            XYSeries series = new XYSeries("Shuffle");
+
+            FrameStats frameStats = MathUtil.analyseFrame(shuffledBytes, 30, 70);
+            frameStats.getByteCountMap().forEach((aByte, count) -> series.add((double) aByte, 100.0d * count / shuffledBytes.length));
+
+            ruleDeviationMap.put("Shuffle", frameStats.getAverageDeviationFromIdealDist());
             dataset.addSeries(series);
         }
 
