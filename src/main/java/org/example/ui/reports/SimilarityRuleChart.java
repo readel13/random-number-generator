@@ -1,7 +1,6 @@
 package org.example.ui.reports;
 
-import com.github.sarxos.webcam.Webcam;
-import com.github.sarxos.webcam.WebcamUtils;
+import org.example.webcam.WebcamSession;
 import org.example.rule.RulesSet;
 import org.example.utils.CellAutomataUtils;
 import org.example.utils.ShuffleUtils;
@@ -18,10 +17,10 @@ public class SimilarityRuleChart extends JFrame {
     private static final int WIDTH = 1600;
     private static final int HEIGHT = 900;
 
-    private final Webcam webcam;
+    private final WebcamSession session;
 
-    public SimilarityRuleChart(Webcam webcam) {
-        this.webcam = webcam;
+    public SimilarityRuleChart(WebcamSession session) {
+        this.session = session;
         buildDefaultFrame();
 
         var generationCollection = createDataset();
@@ -58,7 +57,7 @@ public class SimilarityRuleChart extends JFrame {
     private DefaultCategoryDataset createDataset() {
         var dataset = new DefaultCategoryDataset();
 
-        byte[] first = WebcamUtils.getImageBytes(webcam, "bmp");
+        byte[] first = session.captureBmp();
 
         for (int i = 0; i < 10; i++) {
             int finalIndex = i + 1;

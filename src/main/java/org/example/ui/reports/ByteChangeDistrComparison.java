@@ -1,8 +1,7 @@
 package org.example.ui.reports;
 
-import com.github.sarxos.webcam.Webcam;
-import com.github.sarxos.webcam.WebcamUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.example.webcam.WebcamSession;
 import org.example.ui.NumberField;
 import org.example.ui.button.MyCustomButton;
 import org.example.utils.BufferedImageUtils;
@@ -25,7 +24,7 @@ import java.util.stream.Collectors;
 
 public class ByteChangeDistrComparison extends JFrame {
 
-    private final Webcam webcam;
+    private final WebcamSession session;
 
     private int selectedByteNumber = 5;
 
@@ -37,8 +36,8 @@ public class ByteChangeDistrComparison extends JFrame {
     private final NumberField waitBetweenFramesInput = new NumberField(10, waitMsBetweenFrames);
     private final NumberField numberOfFramesInput = new NumberField(10, numberOfFrames);
 
-    public ByteChangeDistrComparison(Webcam webcam) {
-        this.webcam = webcam;
+    public ByteChangeDistrComparison(WebcamSession session) {
+        this.session = session;
         buildDefaultFrame();
 
         var controlPanel = buildControlPanel();
@@ -104,10 +103,10 @@ public class ByteChangeDistrComparison extends JFrame {
 
         List<Integer> deltas = new ArrayList<>();
 
-        int prevValue = BufferedImageUtils.getSelectedByteFromImage(WebcamUtils.getImageBytes(this.webcam, "bmp"), selectedByteNumber);
+        int prevValue = BufferedImageUtils.getSelectedByteFromImage(session.captureBmp(), selectedByteNumber);
 
         for (int i = 1; i < numberOfFrames; i++) {
-            byte currentVal = BufferedImageUtils.getSelectedByteFromImage(WebcamUtils.getImageBytes(this.webcam, "bmp"), selectedByteNumber);
+            byte currentVal = BufferedImageUtils.getSelectedByteFromImage(session.captureBmp(), selectedByteNumber);
 
             deltas.add((currentVal - prevValue));
 

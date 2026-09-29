@@ -1,8 +1,7 @@
 package org.example.ui.reports;
 
-import com.github.sarxos.webcam.Webcam;
-import com.github.sarxos.webcam.WebcamUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.example.webcam.WebcamSession;
 import org.example.ui.NumberField;
 import org.example.ui.button.MyCustomButton;
 import org.example.utils.BufferedImageUtils;
@@ -21,7 +20,7 @@ import java.util.Arrays;
 
 public class ByteChangeComparison extends JFrame {
 
-    private final Webcam webcam;
+    private final WebcamSession session;
 
     private int selectedByteNumber = 5;
 
@@ -33,8 +32,8 @@ public class ByteChangeComparison extends JFrame {
     private final NumberField waitBetweenFramesInput = new NumberField(10, waitMsBetweenFrames);
     private final NumberField numberOfFramesInput = new NumberField(10, numberOfFrames);
 
-    public ByteChangeComparison(Webcam webcam) {
-        this.webcam = webcam;
+    public ByteChangeComparison(WebcamSession session) {
+        this.session = session;
         buildDefaultFrame();
 
         var controlPanel = buildControlPanel();
@@ -106,7 +105,7 @@ public class ByteChangeComparison extends JFrame {
         var dataset = new DefaultCategoryDataset();
 
         for (int i = 1; i <= numberOfFrames; i++) {
-            byte[] imageBytes = WebcamUtils.getImageBytes(this.webcam, "bmp");
+            byte[] imageBytes = session.captureBmp();
 
             var startIndex = BufferedImageUtils.getImageOffsetBmp(imageBytes);
 

@@ -1,7 +1,6 @@
 package org.example.ui.frames;
 
-import com.github.sarxos.webcam.Webcam;
-import com.github.sarxos.webcam.WebcamUtils;
+import org.example.webcam.WebcamSession;
 import org.example.rule.Rule;
 import org.example.ui.button.MyCustomButton;
 import org.example.ui.dropdown.CARuleDropdown;
@@ -18,10 +17,10 @@ public class GetNoiseTextExample extends JFrame {
     private final JTextField iterations = new JTextField(10);
     private final CARuleDropdown ruleDropdown = new CARuleDropdown();
 
-    private final Webcam webcam;
+    private final WebcamSession session;
 
-    public GetNoiseTextExample(Webcam webcam) {
-        this.webcam = webcam;
+    public GetNoiseTextExample(WebcamSession session) {
+        this.session = session;
 
         buildDefaultFrame();
         var buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 15));
@@ -34,7 +33,7 @@ public class GetNoiseTextExample extends JFrame {
             Rule selectedRule = ruleDropdown.getSelectedRule();
             int iters = Integer.parseInt(iterations.getText());
 
-            byte[] imageBytes = WebcamUtils.getImageBytes(webcam, "bmp");
+            byte[] imageBytes = session.captureBmp();
 
             boolean[] bits = CellAutomataUtils.evolveWithCABytesBits(imageBytes, iters, selectedRule);
 

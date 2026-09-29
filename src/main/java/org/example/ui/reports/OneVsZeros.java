@@ -1,7 +1,6 @@
 package org.example.ui.reports;
 
-import com.github.sarxos.webcam.Webcam;
-import com.github.sarxos.webcam.WebcamUtils;
+import org.example.webcam.WebcamSession;
 import org.example.rule.RulesSet;
 import org.example.utils.BitsUtils;
 import org.example.utils.CellAutomataUtils;
@@ -37,10 +36,10 @@ public class OneVsZeros extends JFrame {
     private boolean includeRule150 = true;
     private boolean includeShuffle = true;
 
-    private final Webcam webcam;
+    private final WebcamSession session;
 
-    public OneVsZeros(Webcam webcam) {
-        this.webcam = webcam;
+    public OneVsZeros(WebcamSession session) {
+        this.session = session;
         buildDefaultFrame();
 
         JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 15));
@@ -131,7 +130,7 @@ public class OneVsZeros extends JFrame {
     private DefaultCategoryDataset createDataset() {
         DefaultCategoryDataset dataset = new DefaultCategoryDataset();
 
-        byte[] imageBytes = WebcamUtils.getImageBytes(webcam, "bmp");
+        byte[] imageBytes = session.captureBmp();
 
         if (includeSecureRandom) {
             SecureRandom secureRandom = new SecureRandom();

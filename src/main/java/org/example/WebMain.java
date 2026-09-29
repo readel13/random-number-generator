@@ -1,8 +1,8 @@
 package org.example;
 
 import com.github.sarxos.webcam.Webcam;
-import com.github.sarxos.webcam.WebcamPanel;
-import com.github.sarxos.webcam.WebcamResolution;
+import org.example.ui.WebcamPreview;
+import org.example.ui.WrapLayout;
 import org.example.ui.button.AnalyticButton;
 import org.example.ui.button.MyCustomButton;
 import org.example.ui.dropdown.ResolutionDropdown;
@@ -15,21 +15,18 @@ import org.example.ui.reports.BytesDistributionReport;
 import org.example.ui.reports.OneVsZeros;
 import org.example.ui.reports.SimilarityRuleChart;
 import org.example.ui.reports.SpeedRuleChart;
+import org.example.webcam.WebcamService;
+import org.example.webcam.WebcamSession;
 
 import javax.swing.*;
 import java.awt.*;
-import java.util.Arrays;
 import java.util.List;
 
 public class WebMain {
 
     public static void main(String[] args) {
-        List<Webcam> webcams = Webcam.getWebcams();
-
-        var defaultWebcam = Webcam.getDefault();
-        defaultWebcam.setCustomViewSizes(ResolutionDropdown.CUSTOM_RESOLUTIONS);
-        defaultWebcam.setViewSize(WebcamResolution.HD.getSize());
-        defaultWebcam.open(true);
+        List<Webcam> webcams = WebcamService.discover();
+        WebcamSession session = new WebcamSession();
 
         var mainWindow = new JFrame("Image change analyzer");
         mainWindow.setLayout(new BorderLayout());
@@ -37,58 +34,80 @@ public class WebMain {
         mainWindow.setSize(1600, 900);
         mainWindow.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        var buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 15));
+        // two rows: the report buttons, and the camera controls underneath. Sharing one row made the
+        // bar overflow the window width, and FlowLayout quietly clipped whatever wrapped.
+        var buttonPanel = new JPanel(new WrapLayout(FlowLayout.LEFT, 10, 15));
+        var cameraPanel = new JPanel(new WrapLayout(FlowLayout.LEFT, 10, 15));
+        var topPanel = new JPanel();
+        topPanel.setLayout(new BoxLayout(topPanel, BoxLayout.Y_AXIS));
+        topPanel.add(buttonPanel);
+        topPanel.add(cameraPanel);
 
+        // the first discovered device is what Webcam.getDefault() would have returned
+        Webcam defaultWebcam = webcams.isEmpty() ? null : webcams.get(0);
         var resolutionDropdown = new ResolutionDropdown(defaultWebcam);
         var webcamDropdown = new WebcamDropdown(webcams, resolutionDropdown);
 
-        var saveConfig = new Button("Save config");
-        saveConfig.addActionListener(e -> {
-            // find defaultWebcam component and close connection
-            var currentWebcamComponent = Arrays.stream(mainWindow.getContentPane().getComponents())
-                    .filter(t -> t instanceof WebcamPanel)
-                    .map(t -> (WebcamPanel) t)
-                    .findFirst()
-                    .orElse(null);
+        var applyConfig = new Button("Save config");
+        applyConfig.addActionListener(e -> applyConfig(mainWindow, session, webcamDropdown, resolutionDropdown));
 
-            currentWebcamComponent.getWebcam().close();
-            currentWebcamComponent.removeAll();
+        List<Component> reportButtons = List.of(
+                new MyCustomButton("Byte distribution", e -> new BytesDistributionReport(session)),
+                new MyCustomButton("One Vs Zero", e -> new OneVsZeros(session)),
+                new MyCustomButton("ByteChangeComparassion (LineChart)", e -> new ByteChangeComparison(session)),
+                new MyCustomButton("Byte Change Distribution", e -> new ByteChangeDistrComparison(session)),
+                new AnalyticButton(session),
+                new MyCustomButton("Rule similarity comparison test", e -> new SimilarityRuleChart(session)),
+                new MyCustomButton("Speed rule test", e -> new SpeedRuleChart(session)),
+                new MyCustomButton("Modified Image", e -> new ModifiedImageFrame(session)),
+                new MyCustomButton("Get noise text", e -> new GetNoiseTextExample(session))
+        );
+        reportButtons.forEach(buttonPanel::add);
+        cameraPanel.add(new Label("Camera:"));
+        cameraPanel.add(webcamDropdown);
+        cameraPanel.add(new Label("Resolution:"));
+        cameraPanel.add(resolutionDropdown);
+        cameraPanel.add(applyConfig);
 
-            mainWindow.remove(currentWebcamComponent);
-
-            var selectedWebcam = webcams.get(webcamDropdown.getSelectedIndex());
-            selectedWebcam.setViewSize(ResolutionDropdown.CUSTOM_RESOLUTIONS[resolutionDropdown.getSelectedIndex()]);
-            selectedWebcam.open(true);
-
-            var updatedWebcamPanel = new WebcamPanel(selectedWebcam);
-            updatedWebcamPanel.setFPSDisplayed(true);
-            updatedWebcamPanel.setImageSizeDisplayed(true);
-
-            mainWindow.add(updatedWebcamPanel, BorderLayout.CENTER);
-            mainWindow.revalidate();
-            mainWindow.repaint();
-        });
-
-        buttonPanel.add(new MyCustomButton("Byte distribution", e -> new BytesDistributionReport(defaultWebcam)));
-        buttonPanel.add(new MyCustomButton("One Vs Zero", e -> new OneVsZeros(defaultWebcam)));
-        buttonPanel.add(new MyCustomButton("ByteChangeComparassion (LineChart)", e -> new ByteChangeComparison(defaultWebcam)));
-        buttonPanel.add(new MyCustomButton("Byte Change Distribution", e -> new ByteChangeDistrComparison(defaultWebcam)));
-        buttonPanel.add(new AnalyticButton(defaultWebcam));
-        buttonPanel.add(new MyCustomButton("Rule similarity comparison test", e -> new SimilarityRuleChart(defaultWebcam)));
-        buttonPanel.add(new MyCustomButton("Speed rule test", e -> new SpeedRuleChart(defaultWebcam)));
-        buttonPanel.add(new MyCustomButton("Modified Image", e -> new ModifiedImageFrame(defaultWebcam)));
-        buttonPanel.add(new MyCustomButton("Get noise text", e -> new GetNoiseTextExample(defaultWebcam)));
-        buttonPanel.add(webcamDropdown);
-        buttonPanel.add(resolutionDropdown);
-        buttonPanel.add(saveConfig);
-
-        var webcamPanel = new WebcamPanel(defaultWebcam);
-        webcamPanel.setFPSDisplayed(true);
-        webcamPanel.setImageSizeDisplayed(true);
-
-        mainWindow.add(buttonPanel, BorderLayout.NORTH);
-        mainWindow.add(webcamPanel, BorderLayout.CENTER);
-
+        mainWindow.add(topPanel, BorderLayout.NORTH);
+        mainWindow.add(new WebcamPreview(session), BorderLayout.CENTER);
         mainWindow.setVisible(true);
+
+        Runtime.getRuntime().addShutdownHook(new Thread(session::release));
+
+        if (defaultWebcam == null) {
+            reportButtons.forEach(button -> button.setEnabled(false));
+            webcamDropdown.setEnabled(false);
+            resolutionDropdown.setEnabled(false);
+            applyConfig.setEnabled(false);
+            JOptionPane.showMessageDialog(mainWindow,
+                    "No webcam was detected on this system. The reports need a camera to capture frames.",
+                    "No webcam", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        openSelected(mainWindow, session, defaultWebcam, resolutionDropdown.getSelectedResolution());
+    }
+
+    private static void applyConfig(JFrame mainWindow,
+                                    WebcamSession session,
+                                    WebcamDropdown webcamDropdown,
+                                    ResolutionDropdown resolutionDropdown) {
+        Webcam selected = webcamDropdown.getSelectedWebcam();
+        if (selected == null) {
+            return;
+        }
+
+        openSelected(mainWindow, session, selected, resolutionDropdown.getSelectedResolution());
+    }
+
+    private static void openSelected(JFrame mainWindow, WebcamSession session, Webcam webcam, Dimension resolution) {
+        try {
+            session.activate(webcam, resolution);
+        } catch (RuntimeException ex) {
+            JOptionPane.showMessageDialog(mainWindow,
+                    "Could not open %s at %s:%n%s".formatted(webcam.getName(), WebcamService.describe(resolution), ex.getMessage()),
+                    "Webcam error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 }

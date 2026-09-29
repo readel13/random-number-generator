@@ -1,7 +1,6 @@
 package org.example.ui.reports;
 
-import com.github.sarxos.webcam.Webcam;
-import com.github.sarxos.webcam.WebcamUtils;
+import org.example.webcam.WebcamSession;
 import org.example.math.MathUtil;
 import org.example.math.model.FrameStats;
 import org.example.rule.RulesSet;
@@ -58,10 +57,10 @@ public class BytesDistributionReport extends JFrame {
 
     private Map<String, Double> ruleDeviationMap = new HashMap<>();
 
-    private final Webcam webcam;
+    private final WebcamSession session;
 
-    public BytesDistributionReport(Webcam webcam) {
-        this.webcam = webcam;
+    public BytesDistributionReport(WebcamSession session) {
+        this.session = session;
         buildDefaultFrame();
 
         var controlPanel = buildControlPanel();
@@ -165,7 +164,7 @@ public class BytesDistributionReport extends JFrame {
             ruleDeviationMap.clear();
         }
 
-        byte[] imageBytes = WebcamUtils.getImageBytes(webcam, "bmp");
+        byte[] imageBytes = session.captureBmp();
 
         if (includeSecureRandomState) {
             SecureRandom secureRandom = new SecureRandom();

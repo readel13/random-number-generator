@@ -1,7 +1,6 @@
 package org.example.ui.button;
 
-import com.github.sarxos.webcam.Webcam;
-import com.github.sarxos.webcam.WebcamUtils;
+import org.example.webcam.WebcamSession;
 import org.example.utils.CellAutomataUtils;
 import org.example.math.MathUtil;
 
@@ -16,10 +15,10 @@ public class AnalyticButton extends Button {
 
     private final static String BUTTON_NAME = "Make analysis image";
 
-    private final Webcam webcam;
+    private final WebcamSession session;
 
-    public AnalyticButton(Webcam webcam) {
-        this.webcam = webcam;
+    public AnalyticButton(WebcamSession session) {
+        this.session = session;
         setLabel(BUTTON_NAME);
 
         addActionListener(buildActionListener());
@@ -38,7 +37,7 @@ public class AnalyticButton extends Button {
             MathUtil.analyseFrame(values, 30, 70);
 
             for (int i = 0; i < 10; i++) {
-                byte[] first = WebcamUtils.getImageBytes(webcam, "bmp");
+                byte[] first = session.captureBmp();
                 boolean consistentFrame = MathUtil.analyseFrame(first, 30, 70).isConsistentFrame();
                 consistentFrames.add(consistentFrame);
 
@@ -46,7 +45,7 @@ public class AnalyticButton extends Button {
 
 //                consistentFrames.add(ComparingUtils.isConsistentFrame(first, 30, 70));
 //
-                byte[] thrid = WebcamUtils.getImageBytes(webcam, "bmp");
+                byte[] thrid = session.captureBmp();
 
                 rates.add(MathUtil.compare(first, thrid));
             }

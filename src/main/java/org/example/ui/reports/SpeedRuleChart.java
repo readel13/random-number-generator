@@ -1,8 +1,7 @@
 package org.example.ui.reports;
 
-import com.github.sarxos.webcam.Webcam;
-import com.github.sarxos.webcam.WebcamUtils;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+import org.example.webcam.WebcamSession;
 import org.example.rule.RulesSet;
 import org.example.utils.CellAutomataUtils;
 import org.example.utils.MeasureTimeUtil;
@@ -22,7 +21,7 @@ import java.util.List;
 
 public class SpeedRuleChart extends JFrame {
 
-    private final Webcam webcam;
+    private final WebcamSession session;
 
     private static final int WIDTH = 1600;
     private static final int HEIGHT = 900;
@@ -37,8 +36,8 @@ public class SpeedRuleChart extends JFrame {
     private final JTextField iterInput = new JTextField(10);
     private final Checkbox includeTakePhotoCheckBox = new Checkbox("Include taking a photo", includeTakingPhoto);
 
-    public SpeedRuleChart(Webcam webcam) {
-        this.webcam = webcam;
+    public SpeedRuleChart(WebcamSession session) {
+        this.session = session;
         buildDefaultFrame();
 
         var configButton = new JButton("Save config");
@@ -108,8 +107,8 @@ public class SpeedRuleChart extends JFrame {
         var rule150TimeExecs = new ArrayList<Long>();
         var shuffleTimeExecs = new ArrayList<Long>();
 
-        byte[] originalPhoto = WebcamUtils.getImageBytes(webcam, "bmp");
-        var imageTakeExec = MeasureTimeUtil.measureTime(() -> WebcamUtils.getImageBytes(webcam, "bmp"));
+        byte[] originalPhoto = session.captureBmp();
+        var imageTakeExec = MeasureTimeUtil.measureTime(() -> session.captureBmp());
 
         MeasureTimeUtil.measureAndPrintTime(() -> {
             DescriptiveStatistics stats = new DescriptiveStatistics();
