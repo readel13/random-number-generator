@@ -1,6 +1,7 @@
 package org.example.ui.reports;
 
 import org.apache.commons.lang3.StringUtils;
+import org.example.ui.AsyncReport;
 import org.example.webcam.WebcamSession;
 import org.example.ui.NumberField;
 import org.example.ui.button.MyCustomButton;
@@ -38,11 +39,8 @@ public class ByteChangeComparison extends JFrame {
 
         var controlPanel = buildControlPanel();
 
-        var dataset = createDataset();
-        var chart = createChart(dataset);
-
         add(controlPanel, BorderLayout.NORTH);
-        add(new ChartPanel(chart), BorderLayout.CENTER);
+        AsyncReport.load(this, this::createDataset, dataset -> new ChartPanel(createChart(dataset)));
     }
 
     private JPanel buildControlPanel() {
@@ -59,16 +57,7 @@ public class ByteChangeComparison extends JFrame {
             waitMsBetweenFrames = StringUtils.isNoneEmpty(waitBetweenFramesInput.getText()) ? Integer.parseInt(waitBetweenFramesInput.getText()) : waitMsBetweenFrames;
             numberOfFrames = StringUtils.isNoneEmpty(numberOfFramesInput.getText()) ? Integer.parseInt(numberOfFramesInput.getText()) : numberOfFrames;
 
-            var currentChart = Arrays.stream(this.getContentPane().getComponents())
-                    .filter(t -> t instanceof ChartPanel)
-                    .map(t -> (ChartPanel) t)
-                    .findFirst()
-                    .orElse(null);
-
-            this.remove(currentChart);
-            this.add(new ChartPanel(createChart(createDataset())));
-            this.revalidate();
-            this.repaint();
+            AsyncReport.load(this, this::createDataset, dataset -> new ChartPanel(createChart(dataset)));
         }));
         return controlPanel;
     }

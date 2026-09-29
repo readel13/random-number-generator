@@ -1,6 +1,7 @@
 package org.example.ui.reports;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+import org.example.ui.AsyncReport;
 import org.example.webcam.WebcamSession;
 import org.example.rule.RulesSet;
 import org.example.utils.CellAutomataUtils;
@@ -46,25 +47,13 @@ public class SpeedRuleChart extends JFrame {
             iterations = Integer.parseInt(iterInput.getText());
             includeTakingPhoto = includeTakePhotoCheckBox.getState();
 
-            var currentChart = Arrays.stream(this.getContentPane().getComponents())
-                    .filter(t -> t instanceof ChartPanel)
-                    .map(t -> (ChartPanel) t)
-                    .findFirst()
-                    .orElse(null);
-
-            remove(currentChart);
-            add(new ChartPanel(createChart(createDataset())));
-            revalidate();
-            repaint();
+            AsyncReport.load(this, this::createDataset, dataset -> new ChartPanel(createChart(dataset)));
         });
 
         var controlPanel = buildControlPanel(configButton);
         add(controlPanel, BorderLayout.NORTH);
 
-        var dataset = createDataset();
-        var chart = createChart(dataset);
-
-        add(new ChartPanel(chart), BorderLayout.CENTER);
+        AsyncReport.load(this, this::createDataset, dataset -> new ChartPanel(createChart(dataset)));
     }
 
     private JPanel buildControlPanel(JButton configButton) {

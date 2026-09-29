@@ -1,5 +1,6 @@
 package org.example.ui.reports;
 
+import org.example.ui.AsyncReport;
 import org.example.webcam.WebcamSession;
 import org.example.rule.RulesSet;
 import org.example.utils.CellAutomataUtils;
@@ -23,10 +24,7 @@ public class SimilarityRuleChart extends JFrame {
         this.session = session;
         buildDefaultFrame();
 
-        var generationCollection = createDataset();
-        var chart = createChart(generationCollection);
-
-        add(new ChartPanel(chart));
+        AsyncReport.load(this, this::createDataset, dataset -> new ChartPanel(createChart(dataset)));
     }
 
     private void buildDefaultFrame() {

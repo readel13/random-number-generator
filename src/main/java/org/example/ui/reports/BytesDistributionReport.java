@@ -1,5 +1,6 @@
 package org.example.ui.reports;
 
+import org.example.ui.AsyncReport;
 import org.example.webcam.WebcamSession;
 import org.example.math.MathUtil;
 import org.example.math.model.FrameStats;
@@ -67,10 +68,7 @@ public class BytesDistributionReport extends JFrame {
 
         add(controlPanel, BorderLayout.NORTH);
 
-        var dataset = createDataset();
-        JFreeChart chart = buildChart(dataset);
-
-        add(new ChartPanel(chart), BorderLayout.CENTER);
+        AsyncReport.load(this, this::createDataset, dataset -> new ChartPanel(buildChart(dataset)));
     }
 
     private JPanel buildControlPanel() {
@@ -88,16 +86,7 @@ public class BytesDistributionReport extends JFrame {
 
             this.generationsState = Integer.parseInt(generations.getText());
 
-            var currentChart = Arrays.stream(this.getContentPane().getComponents())
-                    .filter(t -> t instanceof ChartPanel)
-                    .map(t -> (ChartPanel) t)
-                    .findFirst()
-                    .orElse(null);
-
-            this.remove(currentChart);
-            this.add(new ChartPanel(buildChart(createDataset())));
-            this.revalidate();
-            this.repaint();
+            AsyncReport.load(this, this::createDataset, dataset -> new ChartPanel(buildChart(dataset)));
         });
 
         controlPanel.add(new JLabel("Generations:"));
@@ -259,6 +248,6 @@ public class BytesDistributionReport extends JFrame {
         setSize(WIDTH, HEIGHT);
         setVisible(true);
         setResizable(true);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
     }
 }

@@ -1,5 +1,6 @@
 package org.example.ui.frames;
 
+import org.example.ui.AsyncReport;
 import org.example.webcam.WebcamSession;
 import org.example.utils.BufferedImageUtils;
 import org.example.utils.CellAutomataUtils;
@@ -20,9 +21,8 @@ public class ModifiedImageFrame extends JFrame {
         this.session = session;
 
         buildDefaultFrame();
-        BufferedImage bufferedImage = buildModifiedImage();
 
-        add(new JLabel(new ImageIcon(bufferedImage)));
+        AsyncReport.load(this, this::buildModifiedImage, image -> new JLabel(new ImageIcon(image)));
     }
 
     private BufferedImage buildModifiedImage() {
@@ -45,6 +45,6 @@ public class ModifiedImageFrame extends JFrame {
 
         setVisible(true);
         setResizable(true);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
     }
 }

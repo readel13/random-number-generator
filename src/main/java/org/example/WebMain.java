@@ -1,6 +1,7 @@
 package org.example;
 
 import com.github.sarxos.webcam.Webcam;
+import org.example.ui.ReportActivity;
 import org.example.ui.WebcamPreview;
 import org.example.ui.WrapLayout;
 import org.example.ui.button.AnalyticButton;
@@ -20,6 +21,7 @@ import org.example.webcam.WebcamSession;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.List;
 
 public class WebMain {
@@ -44,7 +46,7 @@ public class WebMain {
         topPanel.add(cameraPanel);
 
         // the first discovered device is what Webcam.getDefault() would have returned
-        Webcam defaultWebcam = webcams.isEmpty() ? null : webcams.get(0);
+        Webcam defaultWebcam = webcams.isEmpty() ? null : webcams.getFirst();
         var resolutionDropdown = new ResolutionDropdown(defaultWebcam);
         var webcamDropdown = new WebcamDropdown(webcams, resolutionDropdown);
 
@@ -69,6 +71,14 @@ public class WebMain {
         cameraPanel.add(resolutionDropdown);
         cameraPanel.add(applyConfig);
 
+        // a running report captures from a background thread; switching or reopening the device
+        // underneath it would close the webcam mid-capture
+        List<Component> controls = new ArrayList<>(reportButtons);
+        controls.add(webcamDropdown);
+        controls.add(resolutionDropdown);
+        controls.add(applyConfig);
+        ReportActivity.addListener(idle -> controls.forEach(control -> control.setEnabled(idle)));
+
         mainWindow.add(topPanel, BorderLayout.NORTH);
         mainWindow.add(new WebcamPreview(session), BorderLayout.CENTER);
         mainWindow.setVisible(true);
@@ -76,10 +86,7 @@ public class WebMain {
         Runtime.getRuntime().addShutdownHook(new Thread(session::release));
 
         if (defaultWebcam == null) {
-            reportButtons.forEach(button -> button.setEnabled(false));
-            webcamDropdown.setEnabled(false);
-            resolutionDropdown.setEnabled(false);
-            applyConfig.setEnabled(false);
+            controls.forEach(control -> control.setEnabled(false));
             JOptionPane.showMessageDialog(mainWindow,
                     "No webcam was detected on this system. The reports need a camera to capture frames.",
                     "No webcam", JOptionPane.WARNING_MESSAGE);

@@ -1,5 +1,6 @@
 package org.example.ui.reports;
 
+import org.example.ui.AsyncReport;
 import org.example.webcam.WebcamSession;
 import org.example.rule.RulesSet;
 import org.example.utils.BitsUtils;
@@ -66,16 +67,7 @@ public class OneVsZeros extends JFrame {
 
             this.generations = Integer.parseInt(generations.getText());
 
-            var currentChart = Arrays.stream(this.getContentPane().getComponents())
-                    .filter(t -> t instanceof ChartPanel)
-                    .map(t -> (ChartPanel) t)
-                    .findFirst()
-                    .orElse(null);
-
-            this.remove(currentChart);
-            this.add(new ChartPanel(buildHistogramChart(createDataset())));
-            this.revalidate();
-            this.repaint();
+            AsyncReport.load(this, this::createDataset, dataset -> new ChartPanel(buildHistogramChart(dataset)));
         });
 
         controlPanel.add(new JLabel("Generations:"));
@@ -92,10 +84,7 @@ public class OneVsZeros extends JFrame {
 
         add(controlPanel, BorderLayout.NORTH);
 
-        var dataset = createDataset();
-        JFreeChart chart = buildHistogramChart(dataset);
-
-        add(new ChartPanel(chart), BorderLayout.CENTER);
+        AsyncReport.load(this, this::createDataset, dataset -> new ChartPanel(buildHistogramChart(dataset)));
     }
 
     private static JFreeChart buildHistogramChart(DefaultCategoryDataset dataset) {
@@ -229,6 +218,6 @@ public class OneVsZeros extends JFrame {
         setSize(WIDTH, HEIGHT);
         setVisible(true);
         setResizable(true);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
     }
 }

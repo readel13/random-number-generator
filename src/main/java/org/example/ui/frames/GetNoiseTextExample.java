@@ -1,5 +1,6 @@
 package org.example.ui.frames;
 
+import org.example.ui.AsyncReport;
 import org.example.webcam.WebcamSession;
 import org.example.rule.Rule;
 import org.example.ui.button.MyCustomButton;
@@ -33,21 +34,24 @@ public class GetNoiseTextExample extends JFrame {
             Rule selectedRule = ruleDropdown.getSelectedRule();
             int iters = Integer.parseInt(iterations.getText());
 
-            byte[] imageBytes = session.captureBmp();
-
-            boolean[] bits = CellAutomataUtils.evolveWithCABytesBits(imageBytes, iters, selectedRule);
-
-            StringBuilder bytesString = new StringBuilder();
-            for (boolean b : bits) {
-                bytesString.append(b ? "1" : "0");
-            }
-
-            textArea.setText(bytesString.toString());
+            textArea.setText("Generating...");
+            AsyncReport.run(this, () -> generateNoiseText(selectedRule, iters), textArea::setText);
         }));
 
 
         add(buttonPanel, BorderLayout.NORTH);
         add(textArea, BorderLayout.CENTER);
+    }
+
+    private String generateNoiseText(Rule rule, int iterations) {
+        boolean[] bits = CellAutomataUtils.evolveWithCABytesBits(session.captureBmp(), iterations, rule);
+
+        StringBuilder bytesString = new StringBuilder(bits.length);
+        for (boolean bit : bits) {
+            bytesString.append(bit ? "1" : "0");
+        }
+
+        return bytesString.toString();
     }
 
     private void buildDefaultFrame() {
@@ -58,6 +62,6 @@ public class GetNoiseTextExample extends JFrame {
 
         setVisible(true);
         setResizable(true);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
     }
 }
