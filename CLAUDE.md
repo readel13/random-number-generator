@@ -60,6 +60,10 @@ Rule 30 is the implicit default: `evolveWithCABytes(byte[], int)` and `evolveWit
 
 `MathUtil.analyseFrame(bytes, deltaPercentage, percentageConsistent)` is the single analysis entry point. It builds a `Map<Byte,Integer>` histogram over all 256 signed byte values and returns a Lombok-built `FrameStats` carrying two independent consistency measures — `consistencyRateByItemCount` (how many histogram buckets sit within delta of the mean bucket) and `consistencyRateByItemAvgDiff` (how many bytes sit within delta of the mean byte). `FrameStats.isConsistentFrame()` requires both to clear the threshold. `averageDeviationFromIdealDist` compares each bucket against a perfectly uniform distribution and is what the histogram report prints as its subtitle.
 
+`BytesDistributionReport` can swap the webcam frame for a generated seed: `IdealSequenceUtils.generate(length, Order)` builds a sequence holding all 256 byte values equally often, either `CYCLIC` (-128,-127,...,127, repeat) or `GROUPED` (every -128, then every -127, ...). Its `averageDeviationFromIdealDist` is 0% by construction, so whatever a rule does to it is measured against a known-flat baseline instead of a lumpy frame. Sizes come from `WebcamService.PREFERRED_RESOLUTIONS` and are `width * height * 3` bytes, all of which divide evenly by 256.
+
+`ShuffleUtils.shuffleBits` is the non-CA baseline in every comparison report. It permutes the **bit** array, not the bytes, so only the one-bit count survives and the byte histogram changes entirely - labelled "Shuffle bits" in the charts for that reason. A near-flat histogram from it is close to automatic once the one-bit density is ~0.5, and its disorder comes from `Collections.shuffle`'s own `Random`, not from the frame.
+
 `MathUtil.compare` returns a **similarity percentage** (fraction of positions that are equal) — in the charts, lower is better, since the goal is divergence from the input frame.
 
 ### UI layer

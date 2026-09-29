@@ -26,7 +26,7 @@ public final class WebcamService {
      * Resolutions offered for every device even when the driver does not report them; the capture
      * library scales to them via {@link Webcam#setCustomViewSizes(Dimension...)}.
      */
-    private static final List<Dimension> PREFERRED_RESOLUTIONS = List.of(
+    public static final List<Dimension> PREFERRED_RESOLUTIONS = List.of(
             WebcamResolution.VGA.getSize(),
             WebcamResolution.HD.getSize(),
             WebcamResolution.HDP.getSize(),

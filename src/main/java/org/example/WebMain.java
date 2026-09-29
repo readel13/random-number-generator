@@ -27,6 +27,14 @@ import java.util.List;
 public class WebMain {
 
     public static void main(String[] args) {
+        // the tooltips here run several lines; the stock 750ms/4s pair pops them up while the
+        // pointer is only passing through, then hides them before they can be read
+        ToolTipManager.sharedInstance().setInitialDelay(1500);
+        ToolTipManager.sharedInstance().setDismissDelay(30_000);
+        // the webcam preview repaints constantly and paints straight over a lightweight popup,
+        // so tooltips need their own window to survive on screen
+        ToolTipManager.sharedInstance().setLightWeightPopupEnabled(false);
+
         List<Webcam> webcams = WebcamService.discover();
         WebcamSession session = new WebcamSession();
 
@@ -49,6 +57,14 @@ public class WebMain {
         Webcam defaultWebcam = webcams.isEmpty() ? null : webcams.getFirst();
         var resolutionDropdown = new ResolutionDropdown(defaultWebcam);
         var webcamDropdown = new WebcamDropdown(webcams, resolutionDropdown);
+
+        webcamDropdown.setToolTipText("<html>Which camera every report captures from.<br>"
+                + "Choosing one reloads the resolutions that device offers;<br>"
+                + "nothing switches until you press <b>Save config</b>.</html>");
+
+        resolutionDropdown.setToolTipText("<html>Capture resolution for the selected camera.<br>"
+                + "The list merges the sizes the driver reports with a few standard ones -<br>"
+                + "a device may quietly clamp to the nearest size it can actually deliver.</html>");
 
         var applyConfig = new Button("Save config");
         applyConfig.addActionListener(e -> applyConfig(mainWindow, session, webcamDropdown, resolutionDropdown));
