@@ -10,16 +10,24 @@ import java.util.List;
  * <p>
  * The shuffle runs over the same bit representation the CA generations run over, which makes one
  * shuffle round the counterpart of one CA generation.
+ * <p>
+ * <b>It permutes bits, not bytes.</b> Only the number of one-bits survives; because the bits move
+ * across byte boundaries the bytes that get re-packed afterwards are different values, so the byte
+ * histogram changes completely. That is why the reports show it flattening a lumpy frame - once the
+ * one-bit density is near 0.5 a bit permutation makes every byte value roughly equally likely,
+ * almost by construction, without adding any entropy from the frame.
  */
 public class ShuffleUtils {
 
     private static final BitsUtils bitsUtils = new BitsUtils();
 
-    public static byte[] shuffleBytes(byte[] image, int rounds) {
-        return BitsUtils.toByteArray(shuffleBytesBits(image, rounds));
+    /** Shuffles the bits of {@code image} and re-packs them into bytes. */
+    public static byte[] shuffleBits(byte[] image, int rounds) {
+        return BitsUtils.toByteArray(shuffleBitsRaw(image, rounds));
     }
 
-    public static boolean[] shuffleBytesBits(byte[] image, int rounds) {
+    /** As {@link #shuffleBits(byte[], int)}, but returns the raw bits without re-packing. */
+    public static boolean[] shuffleBitsRaw(byte[] image, int rounds) {
         boolean[] bits = bitsUtils.toBoolCached(image);
 
         List<Boolean> bitList = new ArrayList<>(bits.length);

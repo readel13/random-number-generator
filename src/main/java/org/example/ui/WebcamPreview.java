@@ -18,6 +18,13 @@ public class WebcamPreview extends JPanel implements WebcamSessionListener {
 
     private static final String NO_WEBCAM_MESSAGE = "No webcam detected - connect one and restart the application";
 
+    /**
+     * {@link WebcamPanel} repaints as fast as it can unless it is told not to, which for a 1280x720
+     * frame means 140+ repaints a second, several saturated cores, and an event dispatch thread
+     * permanently ~25ms behind. A preview does not need more than this.
+     */
+    private static final double PREVIEW_FPS = 15;
+
     private final JLabel placeholder = new JLabel(NO_WEBCAM_MESSAGE, SwingConstants.CENTER);
 
     private WebcamPanel panel;
@@ -53,6 +60,8 @@ public class WebcamPreview extends JPanel implements WebcamSessionListener {
         remove(placeholder);
 
         panel = new WebcamPanel(activated);
+        panel.setFPSLimited(true);
+        panel.setFPSLimit(PREVIEW_FPS);
         panel.setFPSDisplayed(true);
         panel.setImageSizeDisplayed(true);
 

@@ -67,14 +67,14 @@ public class SimilarityRuleChart extends JFrame {
             byte[] cellular150 = CellAutomataUtils.evolveWithCABytes(first, finalIndex, RulesSet::rule150);
 
             // Collections.shuffle baseline
-            byte[] shuffled = ShuffleUtils.shuffleBytes(first, finalIndex);
+            byte[] shuffled = ShuffleUtils.shuffleBits(first, finalIndex);
 
 //                System.out.println("Similiraty rate: " + similarityRate);
             dataset.addValue(MathUtil.compare(first, cellular30), "Rule30", String.valueOf(finalIndex));
             dataset.addValue(MathUtil.compare(first, cellular90), "Rule 90", String.valueOf(finalIndex));
             dataset.addValue(MathUtil.compare(first, cellular105), "Rule 105", String.valueOf(finalIndex));
             dataset.addValue(MathUtil.compare(first, cellular150), "Rule 150", String.valueOf(finalIndex));
-            dataset.addValue(MathUtil.compare(first, shuffled), "Shuffle", String.valueOf(finalIndex));
+            dataset.addValue(MathUtil.compare(first, shuffled), "Shuffle bits", String.valueOf(finalIndex));
         }
 
         return dataset;

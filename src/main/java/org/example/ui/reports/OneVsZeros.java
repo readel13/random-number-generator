@@ -51,7 +51,7 @@ public class OneVsZeros extends JFrame {
         Checkbox includeRule90 = new Checkbox("Include Rule 90", true);
         Checkbox includeRule105 = new Checkbox("Include Rule 105", true);
         Checkbox includeRule150 = new Checkbox("Include Rule 150", true);
-        Checkbox includeShuffle = new Checkbox("Include Shuffle", true);
+        Checkbox includeShuffle = new Checkbox("Include Shuffle bits", true);
 
         JTextField generations = new JTextField(10);
 
@@ -186,13 +186,13 @@ public class OneVsZeros extends JFrame {
         }
 
         if (includeShuffle) {
-            byte[] shuffledBytes = ShuffleUtils.shuffleBytes(imageBytes, generations);
+            byte[] shuffledBytes = ShuffleUtils.shuffleBits(imageBytes, generations);
             long bitSize = 8L * shuffledBytes.length;
             int zerosPercentage = (int) (((double) countZeros(shuffledBytes) / bitSize) * 100);
             int onesPercentage = -1 * (100 - zerosPercentage);
 
-            dataset.addValue(zerosPercentage, "Zero", "Shuffle");
-            dataset.addValue(onesPercentage, "One", "Shuffle");
+            dataset.addValue(zerosPercentage, "Zero", "Shuffle bits");
+            dataset.addValue(onesPercentage, "One", "Shuffle bits");
         }
 
         return dataset;

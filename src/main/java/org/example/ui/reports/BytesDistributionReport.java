@@ -1,6 +1,11 @@
 package org.example.ui.reports;
 
+import org.apache.commons.lang3.StringUtils;
 import org.example.ui.AsyncReport;
+import org.example.ui.WrapLayout;
+import org.example.ui.dropdown.SizeDropdown;
+import org.example.utils.IdealSequenceUtils;
+import org.example.webcam.WebcamService;
 import org.example.webcam.WebcamSession;
 import org.example.math.MathUtil;
 import org.example.math.model.FrameStats;
@@ -49,12 +54,25 @@ public class BytesDistributionReport extends JFrame {
     private boolean includeShuffleState = true;
 
     private final Checkbox includeSecureRandom = new Checkbox("Include Secure Random", true);
-    private final Checkbox includeWebcam = new Checkbox("Include webcam", true);
+    private final Checkbox includeWebcam = new Checkbox("Include raw seed", true);
     private final Checkbox includeRule30 = new Checkbox("Include Rule 30", true);
     private final Checkbox includeRule90 = new Checkbox("Include Rule 90", true);
     private final Checkbox includeRule105 = new Checkbox("Include Rule 105", true);
     private final Checkbox includeRule150 = new Checkbox("Include Rule 150", true);
-    private final Checkbox includeShuffle = new Checkbox("Include Shuffle", true);
+    private final Checkbox includeShuffle = new Checkbox("Include Shuffle bits", true);
+
+    private boolean useIdealSeedState = false;
+    private IdealSequenceUtils.Order idealOrderState = IdealSequenceUtils.Order.CYCLIC;
+    private Dimension idealSizeState = WebcamService.DEFAULT_RESOLUTION;
+
+    // a JCheckBox rather than the AWT Checkbox its neighbours use, so it can carry a tooltip
+    private final JCheckBox useIdealSeed = new JCheckBox("Use ideal sequence as a seed", false);
+    private final JComboBox<IdealSequenceUtils.Order> idealOrder =
+            new JComboBox<>(IdealSequenceUtils.Order.values());
+    private final SizeDropdown idealSize = new SizeDropdown(WebcamService.DEFAULT_RESOLUTION);
+
+    /** Order and size only mean anything for a generated seed, so they are shown only then. */
+    private final JPanel idealOptions = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
 
     private Map<String, Double> ruleDeviationMap = new HashMap<>();
 
@@ -72,7 +90,14 @@ public class BytesDistributionReport extends JFrame {
     }
 
     private JPanel buildControlPanel() {
-        JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 15));
+        // two rows: the series toggles, then the seed controls underneath
+        JPanel seriesRow = new JPanel(new WrapLayout(FlowLayout.LEFT, 10, 15));
+        JPanel seedRow = new JPanel(new WrapLayout(FlowLayout.LEFT, 10, 10));
+
+        JPanel controlPanel = new JPanel();
+        controlPanel.setLayout(new BoxLayout(controlPanel, BoxLayout.Y_AXIS));
+        controlPanel.add(seriesRow);
+        controlPanel.add(seedRow);
 
         Button saveConfig = new Button("Save config");
         saveConfig.addActionListener(e -> {
@@ -84,22 +109,58 @@ public class BytesDistributionReport extends JFrame {
             this.includeRule150State = includeRule150.getState();
             this.includeShuffleState = includeShuffle.getState();
 
-            this.generationsState = Integer.parseInt(generations.getText());
+            this.generationsState = StringUtils.isNoneEmpty(generations.getText())
+                    ? Integer.parseInt(generations.getText())
+                    : generationsState;
+
+            this.useIdealSeedState = useIdealSeed.isSelected();
+            this.idealOrderState = (IdealSequenceUtils.Order) idealOrder.getSelectedItem();
+            this.idealSizeState = idealSize.getSelectedResolution();
 
             AsyncReport.load(this, this::createDataset, dataset -> new ChartPanel(buildChart(dataset)));
         });
 
-        controlPanel.add(new JLabel("Generations:"));
-        controlPanel.add(generations);
+        seriesRow.add(new JLabel("Generations:"));
+        seriesRow.add(generations);
 
-        controlPanel.add(includeSecureRandom);
-        controlPanel.add(includeWebcam);
-        controlPanel.add(includeRule30);
-        controlPanel.add(includeRule90);
-        controlPanel.add(includeRule105);
-        controlPanel.add(includeRule150);
-        controlPanel.add(includeShuffle);
-        controlPanel.add(saveConfig);
+        seriesRow.add(includeSecureRandom);
+        seriesRow.add(includeWebcam);
+        seriesRow.add(includeRule30);
+        seriesRow.add(includeRule90);
+        seriesRow.add(includeRule105);
+        seriesRow.add(includeRule150);
+        seriesRow.add(includeShuffle);
+
+        useIdealSeed.setToolTipText("<html>Build the seed instead of capturing it.<br>"
+                + "The generated frame holds every byte value from -128 to 127 the same number<br>"
+                + "of times, so its histogram is perfectly flat before any rule is applied -<br>"
+                + "the best case a randomness extractor can be handed.</html>");
+
+        idealOrder.setToolTipText("<html>How the equal byte counts are laid out.<br>"
+                + "<b>Cyclic</b> walks -128,-127,...,127 and repeats.<br>"
+                + "<b>Grouped</b> puts every -128 first, then every -127, and so on.<br>"
+                + "Both hold identical counts; only the local structure a rule sees differs.</html>");
+
+        idealSize.setToolTipText("<html>Size of the generated frame, using the same resolutions as the camera.<br>"
+                + "The sequence is width x height x 3 bytes, matching a BGR image at that size.<br>"
+                + "Every option here divides evenly by 256, so the counts come out exactly equal.</html>");
+
+        idealOptions.add(new JLabel("Order:"));
+        idealOptions.add(idealOrder);
+        idealOptions.add(new JLabel("Size:"));
+        idealOptions.add(idealSize);
+        idealOptions.setVisible(useIdealSeed.isSelected());
+
+        useIdealSeed.addItemListener(e -> {
+            idealOptions.setVisible(useIdealSeed.isSelected());
+            controlPanel.revalidate();
+            controlPanel.repaint();
+        });
+
+        seedRow.add(useIdealSeed);
+        seedRow.add(idealOptions);
+
+        seedRow.add(saveConfig);
 
         return controlPanel;
     }
@@ -107,7 +168,7 @@ public class BytesDistributionReport extends JFrame {
     private JFreeChart buildChart(XYSeriesCollection dataset) {
         // Create the histogram chart
         JFreeChart chart = ChartFactory.createXYBarChart(
-                "Byte Percentage Histogram",
+                chartTitle(),
                 "Byte Value",
                 false,
                 "Percentage",
@@ -146,6 +207,15 @@ public class BytesDistributionReport extends JFrame {
         return chart;
     }
 
+    private String chartTitle() {
+        if (!useIdealSeedState) {
+            return "Byte Percentage Histogram (webcam frame)";
+        }
+
+        return "Byte Percentage Histogram (generated frame, %s, %s)".formatted(
+                idealOrderState, WebcamService.describe(idealSizeState));
+    }
+
     private XYSeriesCollection createDataset() {
         XYSeriesCollection dataset = new XYSeriesCollection();
 
@@ -153,7 +223,7 @@ public class BytesDistributionReport extends JFrame {
             ruleDeviationMap.clear();
         }
 
-        byte[] imageBytes = session.captureBmp();
+        byte[] imageBytes = buildSeed();
 
         if (includeSecureRandomState) {
             SecureRandom secureRandom = new SecureRandom();
@@ -170,12 +240,13 @@ public class BytesDistributionReport extends JFrame {
         }
 
         if (includeWebcamRawState) {
-            XYSeries series = new XYSeries("Webcam Raw");
+            String seedName = seedName();
+            XYSeries series = new XYSeries(seedName);
 
             FrameStats frameStats = MathUtil.analyseFrame(imageBytes, 30, 70);
             frameStats.getByteCountMap().forEach((aByte, count) -> series.add((double) aByte, 100.0d * count / imageBytes.length));
 
-            ruleDeviationMap.put("Webcam Raw", frameStats.getAverageDeviationFromIdealDist());
+            ruleDeviationMap.put(seedName, frameStats.getAverageDeviationFromIdealDist());
             dataset.addSeries(series);
         }
 
@@ -228,18 +299,38 @@ public class BytesDistributionReport extends JFrame {
         }
 
         if (includeShuffleState) {
-            byte[] shuffledBytes = ShuffleUtils.shuffleBytes(imageBytes, generationsState);
+            byte[] shuffledBytes = ShuffleUtils.shuffleBits(imageBytes, generationsState);
 
-            XYSeries series = new XYSeries("Shuffle");
+            XYSeries series = new XYSeries("Shuffle bits");
 
             FrameStats frameStats = MathUtil.analyseFrame(shuffledBytes, 30, 70);
             frameStats.getByteCountMap().forEach((aByte, count) -> series.add((double) aByte, 100.0d * count / shuffledBytes.length));
 
-            ruleDeviationMap.put("Shuffle", frameStats.getAverageDeviationFromIdealDist());
+            ruleDeviationMap.put("Shuffle bits", frameStats.getAverageDeviationFromIdealDist());
             dataset.addSeries(series);
         }
 
         return dataset;
+    }
+
+    /**
+     * The bytes every series is derived from: either a live frame, or a generated sequence holding
+     * each of the 256 byte values equally often - a perfectly flat histogram to start from.
+     */
+    private byte[] buildSeed() {
+        if (!useIdealSeedState) {
+            return session.captureBmp();
+        }
+
+        return IdealSequenceUtils.generate(IdealSequenceUtils.byteCount(idealSizeState), idealOrderState);
+    }
+
+    private String seedName() {
+        if (!useIdealSeedState) {
+            return "Webcam Raw";
+        }
+
+        return "Ideal %s".formatted(idealOrderState == IdealSequenceUtils.Order.CYCLIC ? "cyclic" : "grouped");
     }
 
     private void buildDefaultFrame() {
