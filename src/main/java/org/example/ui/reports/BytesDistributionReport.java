@@ -1,17 +1,18 @@
 package org.example.ui.reports;
 
 import org.apache.commons.lang3.StringUtils;
-import org.example.ui.AsyncReport;
-import org.example.ui.WrapLayout;
-import org.example.ui.dropdown.SizeDropdown;
-import org.example.utils.IdealSequenceUtils;
-import org.example.webcam.WebcamService;
-import org.example.webcam.WebcamSession;
 import org.example.math.MathUtil;
 import org.example.math.model.FrameStats;
 import org.example.rule.RulesSet;
+import org.example.ui.AsyncReport;
+import org.example.ui.WrapLayout;
+import org.example.ui.dropdown.SizeDropdown;
 import org.example.utils.CellAutomataUtils;
+import org.example.utils.GaussSequenceUtils;
+import org.example.utils.IdealSequenceUtils;
 import org.example.utils.ShuffleUtils;
+import org.example.webcam.WebcamService;
+import org.example.webcam.WebcamSession;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
@@ -28,7 +29,6 @@ import org.jfree.data.xy.XYSeriesCollection;
 import javax.swing.*;
 import java.awt.*;
 import java.security.SecureRandom;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -40,6 +40,27 @@ public class BytesDistributionReport extends JFrame {
     private static final int HEIGHT = 900;
 
     private final static String AVG_DEVIATION_TEXT_FORMAT = "%s deviation: %.2f%%";
+
+    /**
+     * Which histogram the generated seed has. Both are built from exact counts, so neither carries
+     * sampling noise.
+     */
+    private enum IdealSeed {
+
+        EQUAL("Ideal Equal"),
+        GAUSS("Ideal Gauss");
+
+        private final String label;
+
+        IdealSeed(String label) {
+            this.label = label;
+        }
+
+        @Override
+        public String toString() {
+            return label;
+        }
+    }
 
     private int generationsState = 1;
 
@@ -62,17 +83,30 @@ public class BytesDistributionReport extends JFrame {
     private final Checkbox includeShuffle = new Checkbox("Include Shuffle bits", true);
 
     private boolean useIdealSeedState = false;
+    private IdealSeed idealSeedState = IdealSeed.EQUAL;
+    private double gaussMeanState = GaussSequenceUtils.DEFAULT_MEAN;
+    private double gaussSigmaState = GaussSequenceUtils.DEFAULT_SIGMA;
     private IdealSequenceUtils.Order idealOrderState = IdealSequenceUtils.Order.CYCLIC;
     private Dimension idealSizeState = WebcamService.DEFAULT_RESOLUTION;
 
     // a JCheckBox rather than the AWT Checkbox its neighbours use, so it can carry a tooltip
     private final JCheckBox useIdealSeed = new JCheckBox("Use ideal sequence as a seed", false);
+    private final JComboBox<IdealSeed> idealSeed = new JComboBox<>(IdealSeed.values());
+    private final JTextField gaussMean = new JTextField(String.valueOf(GaussSequenceUtils.DEFAULT_MEAN), 5);
+    private final JTextField gaussSigma = new JTextField(String.valueOf(GaussSequenceUtils.DEFAULT_SIGMA), 5);
     private final JComboBox<IdealSequenceUtils.Order> idealOrder =
             new JComboBox<>(IdealSequenceUtils.Order.values());
     private final SizeDropdown idealSize = new SizeDropdown(WebcamService.DEFAULT_RESOLUTION);
 
-    /** Order and size only mean anything for a generated seed, so they are shown only then. */
+    /**
+     * Order and size only mean anything for a generated seed, so they are shown only then.
+     */
     private final JPanel idealOptions = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+
+    /**
+     * Mean and sigma only shape the gauss sequence.
+     */
+    private final JPanel gaussOptions = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
 
     private Map<String, Double> ruleDeviationMap = new HashMap<>();
 
@@ -114,6 +148,10 @@ public class BytesDistributionReport extends JFrame {
                     : generationsState;
 
             this.useIdealSeedState = useIdealSeed.isSelected();
+            this.idealSeedState = (IdealSeed) idealSeed.getSelectedItem();
+            this.gaussMeanState = parseOr(gaussMean, gaussMeanState);
+            double sigma = parseOr(gaussSigma, gaussSigmaState);
+            this.gaussSigmaState = sigma > 0 ? sigma : gaussSigmaState;
             this.idealOrderState = (IdealSequenceUtils.Order) idealOrder.getSelectedItem();
             this.idealSizeState = idealSize.getSelectedResolution();
 
@@ -132,9 +170,20 @@ public class BytesDistributionReport extends JFrame {
         seriesRow.add(includeShuffle);
 
         useIdealSeed.setToolTipText("<html>Build the seed instead of capturing it.<br>"
-                + "The generated frame holds every byte value from -128 to 127 the same number<br>"
-                + "of times, so its histogram is perfectly flat before any rule is applied -<br>"
-                + "the best case a randomness extractor can be handed.</html>");
+                + "Its histogram is known exactly before any rule is applied,<br>"
+                + "so each rule is measured against a fixed baseline.</html>");
+
+        idealSeed.setToolTipText("<html>The histogram of the generated frame.<br>"
+                + "<b>ideal-equal</b> holds every byte value from -128 to 127 the same number of times -<br>"
+                + "a perfectly flat histogram, the best case a randomness extractor can be handed.<br>"
+                + "<b>ideal gauss</b> follows a normal curve with the given mean and sigma - a known<br>"
+                + "skewed input, showing how much a rule actually flattens a distribution.<br>"
+                + "Its counts are computed from the curve, not sampled, so it is the same every run.</html>");
+
+        gaussMean.setToolTipText("Centre of the curve, as a signed byte value (-128..127).");
+        gaussSigma.setToolTipText("<html>Standard deviation, in byte values; must be positive.<br>"
+                + "The curve is truncated to -128..127 rather than clamped,<br>"
+                + "so wide curves do not pile up on the end values.</html>");
 
         idealOrder.setToolTipText("<html>How the equal byte counts are laid out.<br>"
                 + "<b>Cyclic</b> walks -128,-127,...,127 and repeats.<br>"
@@ -143,8 +192,23 @@ public class BytesDistributionReport extends JFrame {
 
         idealSize.setToolTipText("<html>Size of the generated frame, using the same resolutions as the camera.<br>"
                 + "The sequence is width x height x 3 bytes, matching a BGR image at that size.<br>"
-                + "Every option here divides evenly by 256, so the counts come out exactly equal.</html>");
+                + "Every option here divides evenly by 256, so ideal-equal counts come out exactly equal.</html>");
 
+        gaussOptions.add(new JLabel("Mean:"));
+        gaussOptions.add(gaussMean);
+        gaussOptions.add(new JLabel("Sigma:"));
+        gaussOptions.add(gaussSigma);
+        gaussOptions.setVisible(idealSeed.getSelectedItem() == IdealSeed.GAUSS);
+
+        idealSeed.addItemListener(e -> {
+            gaussOptions.setVisible(idealSeed.getSelectedItem() == IdealSeed.GAUSS);
+            controlPanel.revalidate();
+            controlPanel.repaint();
+        });
+
+        idealOptions.add(new JLabel("Sequence:"));
+        idealOptions.add(idealSeed);
+        idealOptions.add(gaussOptions);
         idealOptions.add(new JLabel("Order:"));
         idealOptions.add(idealOrder);
         idealOptions.add(new JLabel("Size:"));
@@ -212,8 +276,8 @@ public class BytesDistributionReport extends JFrame {
             return "Byte Percentage Histogram (webcam frame)";
         }
 
-        return "Byte Percentage Histogram (generated frame, %s, %s)".formatted(
-                idealOrderState, WebcamService.describe(idealSizeState));
+        return "Byte Percentage Histogram (generated frame: %s, %s)".formatted(
+                seedName(), WebcamService.describe(idealSizeState));
     }
 
     private XYSeriesCollection createDataset() {
@@ -314,15 +378,20 @@ public class BytesDistributionReport extends JFrame {
     }
 
     /**
-     * The bytes every series is derived from: either a live frame, or a generated sequence holding
-     * each of the 256 byte values equally often - a perfectly flat histogram to start from.
+     * The bytes every series is derived from: either a live frame, or a generated sequence with a
+     * known histogram - flat (ideal-equal) or a normal curve (ideal gauss).
      */
     private byte[] buildSeed() {
         if (!useIdealSeedState) {
             return session.captureBmp();
         }
 
-        return IdealSequenceUtils.generate(IdealSequenceUtils.byteCount(idealSizeState), idealOrderState);
+        int length = IdealSequenceUtils.byteCount(idealSizeState);
+
+        return switch (idealSeedState) {
+            case EQUAL -> IdealSequenceUtils.generate(length, idealOrderState);
+            case GAUSS -> GaussSequenceUtils.generate(length, gaussMeanState, gaussSigmaState, idealOrderState);
+        };
     }
 
     private String seedName() {
@@ -330,7 +399,23 @@ public class BytesDistributionReport extends JFrame {
             return "Webcam Raw";
         }
 
-        return "Ideal %s".formatted(idealOrderState == IdealSequenceUtils.Order.CYCLIC ? "cyclic" : "grouped");
+        String order = idealOrderState == IdealSequenceUtils.Order.CYCLIC ? "cyclic" : "grouped";
+
+        return switch (idealSeedState) {
+            case EQUAL -> "Ideal Equal %s".formatted(order);
+            case GAUSS -> "Ideal Gauss %s (mean %s, sigma %s)".formatted(order, gaussMeanState, gaussSigmaState);
+        };
+    }
+
+    /**
+     * The field's number, or {@code fallback} when it is empty or not a number.
+     */
+    private static double parseOr(JTextField field, double fallback) {
+        try {
+            return Double.parseDouble(field.getText().trim());
+        } catch (NumberFormatException e) {
+            return fallback;
+        }
     }
 
     private void buildDefaultFrame() {
