@@ -30,6 +30,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.security.SecureRandom;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -81,6 +82,12 @@ public class BytesDistributionReport extends JFrame {
     private final Checkbox includeRule105 = new Checkbox("Include Rule 105", true);
     private final Checkbox includeRule150 = new Checkbox("Include Rule 150", true);
     private final Checkbox includeShuffle = new Checkbox("Include Shuffle bits", true);
+
+    /**
+     * Ticking clears every series toggle, unticking turns them all back on. It follows the toggles
+     * too, so it is ticked exactly when no series is selected.
+     */
+    private final Checkbox unselectAll = new Checkbox("Unselect all", false);
 
     private boolean useIdealSeedState = false;
     private IdealSeed idealSeedState = IdealSeed.EQUAL;
@@ -161,6 +168,15 @@ public class BytesDistributionReport extends JFrame {
         seriesRow.add(new JLabel("Generations:"));
         seriesRow.add(generations);
 
+        List<Checkbox> seriesToggles = List.of(includeSecureRandom, includeWebcam, includeRule30,
+                includeRule90, includeRule105, includeRule150, includeShuffle);
+
+        unselectAll.addItemListener(e -> seriesToggles.forEach(toggle -> toggle.setState(!unselectAll.getState())));
+        // setState does not fire item events, so this only reacts to the user's own clicks
+        seriesToggles.forEach(toggle -> toggle.addItemListener(e ->
+                unselectAll.setState(seriesToggles.stream().noneMatch(Checkbox::getState))));
+
+        seriesRow.add(unselectAll);
         seriesRow.add(includeSecureRandom);
         seriesRow.add(includeWebcam);
         seriesRow.add(includeRule30);
